@@ -7,12 +7,25 @@ class VectorStore:
     def __init__(self):
         # Use a local directory for persistence
         persist_directory = os.path.join(os.getcwd(), "chroma_db")
-        self.client = chromadb.PersistentClient(path=persist_directory)
+        # Optimize settings for Render Free Tier (low RAM)
+        self.client = chromadb.PersistentClient(
+            path=persist_directory,
+            settings=Settings(
+                chroma_segment_cache_policy="LRU",
+                # Limit cache to ~150MB to stay within Render's 512MB limit
+                chroma_memory_limit_bytes=150000000
+            )
+        )
         
-        # Create or get the collection
+        # Create or get the collection with lower HNSW complexity to save RAM
         self.collection = self.client.get_or_create_collection(
             name="study_materials",
-            metadata={"hnsw:space": "cosine"}
+            metadata={
+                "hnsw:space": "cosine",
+                "hnsw:construction_ef": 100,
+                "hnsw:M": 16,
+                "hnsw:search_ef": 50
+            }
         )
 
     def add_documents(self, texts: list[str], metadatas: list[dict], ids: list[str]):

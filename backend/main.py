@@ -32,6 +32,9 @@ study_materials = []
 class QueryRequest(BaseModel):
     prompt: str
 
+class GenerateRequest(BaseModel):
+    count: int = 5
+
 class SourceInfo(BaseModel):
     filename: str
     snippet: str
@@ -248,7 +251,7 @@ async def extract_concepts():
         raise HTTPException(status_code=500, detail=f"Error extracting concepts: {str(e)}")
 
 @app.post("/quiz", response_model=QuizResponse)
-async def generate_quiz():
+async def generate_quiz(request: GenerateRequest = GenerateRequest(count=3)):
     if not study_materials:
         raise HTTPException(status_code=400, detail="No materials uploaded.")
     
@@ -260,8 +263,8 @@ async def generate_quiz():
         if search_results and search_results['documents'] and search_results['documents'][0]:
             context = "\n\n---\n\n".join(search_results['documents'][0])
         
-        prompt = """
-        Generate 3 high-quality multiple-choice questions based on the provided context.
+        prompt = f"""
+        Generate {request.count} high-quality multiple-choice questions based on the provided context.
         Each question must have:
         1. A clear question.
         2. Exactly 4 options.
@@ -295,7 +298,7 @@ async def generate_quiz():
         raise HTTPException(status_code=500, detail=f"Error generating quiz: {str(e)}")
 
 @app.post("/flashcards", response_model=FlashcardsResponse)
-async def generate_flashcards():
+async def generate_flashcards(request: GenerateRequest = GenerateRequest(count=5)):
     if not study_materials:
         raise HTTPException(status_code=400, detail="No materials uploaded.")
     
@@ -303,8 +306,8 @@ async def generate_flashcards():
         search_results = vector_store.query("What are the key definitions, formulas, and core concepts in these materials?", n_results=15)
         context = "\n\n---\n\n".join(search_results['documents'][0]) if search_results['documents'] else ""
         
-        prompt = """
-        Generate 5 high-quality flashcards based on the provided context.
+        prompt = f"""
+        Generate {request.count} high-quality flashcards based on the provided context.
         Each flashcard must have a 'front' (question/term) and a 'back' (answer/definition).
         Focus on core concepts that are essential for exams.
         

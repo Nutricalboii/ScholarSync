@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 
 export default function Home() {
   const [files, setFiles] = useState<File[]>([]);
@@ -29,6 +32,7 @@ export default function Home() {
   const [quizLoading, setQuizLoading] = useState(false);
   const [flashcardsLoading, setFlashcardsLoading] = useState(false);
   const [isDark, setIsDark] = useState(true);
+  const [itemCount, setItemCount] = useState(5);
 
   useEffect(() => {
     const container = document.getElementById('chat-container');
@@ -40,6 +44,18 @@ export default function Home() {
   const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000").replace(/\/$/, "");
 
   useEffect(() => {
+    const checkBackend = async () => {
+      try {
+        const res = await fetch(`${backendUrl}/`, { 
+          headers: { "bypass-tunnel-reminder": "true" } 
+        });
+        if (!res.ok) console.warn("Backend is waking up...");
+      } catch (err) {
+        console.error("Backend connection error", err);
+      }
+    };
+    
+    checkBackend();
     fetchMaterials();
     fetchConcepts();
   }, []);
@@ -202,7 +218,11 @@ export default function Home() {
     try {
       const res = await fetch(`${backendUrl}/quiz`, {
         method: "POST",
-        headers: { "bypass-tunnel-reminder": "true" }
+        headers: { 
+          "Content-Type": "application/json",
+          "bypass-tunnel-reminder": "true" 
+        },
+        body: JSON.stringify({ count: itemCount })
       });
 
       if (res.ok) {
@@ -235,7 +255,11 @@ export default function Home() {
     try {
       const res = await fetch(`${backendUrl}/flashcards`, {
         method: "POST",
-        headers: { "bypass-tunnel-reminder": "true" }
+        headers: { 
+          "Content-Type": "application/json",
+          "bypass-tunnel-reminder": "true" 
+        },
+        body: JSON.stringify({ count: itemCount })
       });
 
       if (res.ok) {
@@ -327,7 +351,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10 h-[calc(100vh-80px)] overflow-hidden">
+      <main className="max-w-7xl mx-auto px-4 py-6 lg:py-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 h-auto lg:h-[calc(100vh-80px)] overflow-y-auto lg:overflow-hidden">
         {/* Left Sidebar: Upload and Materials - Sticky */}
         <div className="lg:col-span-4 space-y-8 overflow-y-auto pr-2 custom-scrollbar">
           <section className={`p-6 rounded-2xl border transition-all ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
@@ -444,9 +468,27 @@ export default function Home() {
               </div>
             )}
             {materials.length > 0 && (
-              <div className="mt-6 space-y-3">
-                <button
-                  onClick={handleAnalyze}
+              <div className="mt-6 space-y-4">
+                <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                  <label className="text-[10px] font-black uppercase tracking-widest opacity-50 block mb-2">
+                    Items to generate
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="range" 
+                      min="1" 
+                      max="10" 
+                      value={itemCount} 
+                      onChange={(e) => setItemCount(parseInt(e.target.value))}
+                      className="flex-grow h-1.5 bg-blue-600/20 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+                    <span className="text-sm font-bold w-4 text-center">{itemCount}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={handleAnalyze}
                   disabled={loading || uploading}
                   className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all border-2
                     ${isDark 
@@ -471,6 +513,19 @@ export default function Home() {
                   </svg>
                   {quizLoading ? "Generating..." : "Practice Quiz"}
                 </button>
+                <button
+                  onClick={handleGenerateFlashcards}
+                  disabled={loading || uploading || flashcardsLoading}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all border-2
+                    ${isDark 
+                      ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10" 
+                      : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  {flashcardsLoading ? "Generating..." : "Study Flashcards"}
+                </button>
               </div>
             )}
           </section>
@@ -491,7 +546,7 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 overflow-visible">
                   {concepts.map((c, i) => (
                     <div 
                       key={i} 
@@ -631,16 +686,16 @@ export default function Home() {
                           : (isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-800')}`}>
                         
                         <div className="prose prose-sm dark:prose-invert max-w-none">
-                          {msg.content.split('\n').map((line, i) => {
-                            const cleanLine = line.replace(/[|*#]/g, '').trim();
-                            if (!cleanLine) return <div key={i} className="h-2" />;
-                            
-                            if (line.startsWith('#') || (line.toUpperCase() === line && line.length > 5 && line.length < 50)) {
-                              return <h4 key={i} className={`font-bold mt-3 mb-1 ${msg.role === 'user' ? 'text-blue-100' : (msg.isAnalysis ? 'text-purple-400' : 'text-blue-400')}`}>{cleanLine}</h4>;
-                            }
-                            
-                            return <p key={i} className="mb-1 leading-relaxed">{cleanLine}</p>;
-                          })}
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkMath]} 
+                            rehypePlugins={[rehypeKatex]}
+                            components={{
+                              h4: ({node, ...props}) => <h4 className={`font-bold mt-3 mb-1 ${msg.role === 'user' ? 'text-blue-100' : (msg.isAnalysis ? 'text-purple-400' : 'text-blue-400')}`} {...props} />,
+                              p: ({node, ...props}) => <p className="mb-1 leading-relaxed" {...props} />,
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
                         </div>
 
                         {msg.sources && msg.sources.length > 0 && (
@@ -688,20 +743,20 @@ export default function Home() {
                                 key={fci}
                                 onClick={(e) => {
                                   const target = e.currentTarget;
-                                  target.classList.toggle('[transform:rotateY(180deg)]');
+                                  target.classList.toggle('flashcard-flipped');
                                 }}
                                 className="group w-64 h-40 [perspective:1000px] cursor-pointer"
                               >
-                                <div className="relative w-full h-full transition-all duration-500 [transform-style:preserve-3d] shadow-xl rounded-2xl">
+                                <div className="flashcard-inner relative w-full h-full shadow-xl rounded-2xl">
                                   {/* Front */}
-                                  <div className={`absolute inset-0 w-full h-full p-6 flex flex-col items-center justify-center text-center backface-hidden rounded-2xl border-2
+                                  <div className={`flashcard-front absolute inset-0 w-full h-full p-6 flex flex-col items-center justify-center text-center rounded-2xl border-2
                                     ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
                                     <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 mb-2">Question</span>
                                     <p className="text-xs font-bold leading-relaxed">{fc.front}</p>
                                     <div className="mt-4 text-[8px] opacity-40 uppercase tracking-tighter">Click to flip</div>
                                   </div>
                                   {/* Back */}
-                                  <div className={`absolute inset-0 w-full h-full p-6 flex flex-col items-center justify-center text-center [transform:rotateY(180deg)] backface-hidden rounded-2xl border-2
+                                  <div className={`flashcard-back absolute inset-0 w-full h-full p-6 flex flex-col items-center justify-center text-center rounded-2xl border-2
                                     ${isDark ? 'bg-amber-900/20 border-amber-500/50' : 'bg-amber-50 border-amber-200'}`}>
                                     <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 mb-2">Answer</span>
                                     <p className="text-xs leading-relaxed">{fc.back}</p>
@@ -823,13 +878,16 @@ export default function Home() {
                               
                               if (sourceIdx === -1 || targetIdx === -1) return null;
                               
-                              // Calculate coordinates based on circular layout
+                              // Calculate coordinates based on hierarchical layout
                               const getPos = (index: number) => {
-                                const angle = (index / concepts.length) * 2 * Math.PI;
-                                const radius = 180;
+                                const nodesPerRow = 2; // Fewer nodes per row for more vertical look
+                                const row = Math.floor(index / nodesPerRow);
+                                const col = index % nodesPerRow;
+                                const xSpacing = 220; // More horizontal space
+                                const ySpacing = 160; // More vertical space
                                 return {
-                                  x: 250 + radius * Math.cos(angle),
-                                  y: 250 + radius * Math.sin(angle)
+                                  x: 100 + col * xSpacing + (row % 2 === 0 ? 0 : 20),
+                                  y: 80 + row * ySpacing
                                 };
                               };
                               
@@ -853,10 +911,13 @@ export default function Home() {
                           {/* Concept Nodes */}
                           <div className="absolute inset-0">
                             {concepts.map((concept, i) => {
-                              const angle = (i / concepts.length) * 2 * Math.PI;
-                              const radius = 180;
-                              const x = 250 + radius * Math.cos(angle);
-                              const y = 250 + radius * Math.sin(angle);
+                              const nodesPerRow = 2;
+                              const row = Math.floor(i / nodesPerRow);
+                              const col = i % nodesPerRow;
+                              const xSpacing = 220;
+                              const ySpacing = 160;
+                              const x = 100 + col * xSpacing + (row % 2 === 0 ? 0 : 20);
+                              const y = 80 + row * ySpacing;
 
                               return (
                                 <div 
@@ -984,47 +1045,8 @@ export default function Home() {
                   </button>
                 </form>
               ) : (
-                <div className="flex justify-center gap-4 max-w-4xl mx-auto">
-                  <button 
-          onClick={handleGenerateQuiz}
-          disabled={loading || materials.length === 0 || quizLoading}
-          className={`px-8 py-4 rounded-2xl font-bold transition-all flex items-center gap-3
-            ${!loading && materials.length > 0
-              ? "bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-600/30" 
-              : "bg-slate-800 text-slate-500 cursor-not-allowed"}`}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-          {quizLoading ? "Generating..." : "Practice Quiz"}
-        </button>
-        <button 
-          onClick={handleGenerateFlashcards}
-          disabled={loading || materials.length === 0 || flashcardsLoading}
-          className={`px-8 py-4 rounded-2xl font-bold transition-all flex items-center gap-3
-            ${!loading && materials.length > 0
-              ? "bg-amber-600 text-white hover:bg-amber-700 shadow-lg shadow-amber-600/30" 
-              : "bg-slate-800 text-slate-500 cursor-not-allowed"}`}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-          {flashcardsLoading ? "Generating..." : "Flashcards"}
-        </button>
-        <button 
-          onClick={handleAnalyze}
-                    disabled={loading || materials.length === 0}
-                    className={`px-8 py-4 rounded-2xl font-bold transition-all flex items-center gap-3
-                      ${!loading && materials.length > 0
-                        ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/30" 
-                        : "bg-slate-800 text-slate-500 cursor-not-allowed"}`}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-                    </svg>
-                    Deep Synthesis Analysis
-                  </button>
+                <div className="flex justify-center gap-4 max-w-4xl mx-auto h-0 p-0 overflow-hidden opacity-0 pointer-events-none">
+                  {/* Buttons moved to sidebar */}
                 </div>
               )}
             </div>
