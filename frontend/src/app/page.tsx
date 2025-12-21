@@ -553,7 +553,6 @@ export default function Home() {
             </div>
             )}
           </section>
-
           {concepts.length > 0 && (
             <section className={`p-6 rounded-2xl border transition-all animate-in fade-in slide-in-from-left-4
               ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
