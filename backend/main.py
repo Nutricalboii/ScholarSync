@@ -84,7 +84,7 @@ class FlashcardsResponse(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "ScholarSync API is running"}
+    return {"status": "online", "message": "ScholarSync API is running"}
 
 @app.post("/upload")
 async def upload_material(file: UploadFile = File(...)):

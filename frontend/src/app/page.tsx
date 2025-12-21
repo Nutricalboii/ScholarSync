@@ -51,20 +51,40 @@ export default function Home() {
     
     const checkBackend = async () => {
       setBackendStatus('checking');
+      const startTime = Date.now();
+      
       try {
-        console.log(`Checking backend at: ${backendUrl}`);
+        console.log(`Checking backend connection to: ${backendUrl}`);
+        
+        // Use a longer timeout for the initial wake-up call (Render free tier can take 30s+)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
+
         const res = await fetch(`${backendUrl}/`, { 
-          headers: { "bypass-tunnel-reminder": "true" } 
+          headers: { 
+            "bypass-tunnel-reminder": "true",
+            "Accept": "application/json"
+          },
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+        
         if (res.ok) {
+          console.log(`✅ Backend online! (Response time: ${Date.now() - startTime}ms)`);
           setBackendStatus('online');
         } else {
+          console.error(`❌ Backend error: ${res.status} ${res.statusText}`);
           setBackendStatus('offline');
-          console.warn("Backend responded but with an error status.");
         }
-      } catch (err) {
+      } catch (err: any) {
+        const duration = Date.now() - startTime;
+        if (err.name === 'AbortError') {
+          console.error(`❌ Connection timed out after ${duration}ms. Server might be cold-starting.`);
+        } else {
+          console.error(`❌ Connection failed to ${backendUrl} after ${duration}ms:`, err.message);
+        }
         setBackendStatus('offline');
-        console.error("Backend connection error details:", err);
       }
     };
     
