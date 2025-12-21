@@ -37,7 +37,7 @@ export default function Home() {
     }
   }, [chatHistory, loading]);
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000").replace(/\/$/, "");
 
   useEffect(() => {
     fetchMaterials();
