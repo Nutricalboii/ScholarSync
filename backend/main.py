@@ -16,6 +16,7 @@ origins = [
     "https://scholar-sync.vercel.app",
     "https://scholar-sync-tau.vercel.app",
     "https://scholar-sync-nutricalboiis-projects.vercel.app",
+    "https://scholarsync-nutricalboii.vercel.app",
     "http://localhost:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3000",

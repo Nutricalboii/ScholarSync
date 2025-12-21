@@ -1073,6 +1073,51 @@ export default function Home() {
         </p>
       </footer>
 
+      {/* Mobile Floating Action Bar */}
+      <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-md">
+        <div className={`flex items-center justify-around p-2 rounded-2xl border shadow-2xl backdrop-blur-xl
+          ${isDark ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white/80 border-slate-200/50'}`}>
+          <button 
+            onClick={handleAnalyze}
+            disabled={materials.length === 0 || loading}
+            className="flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-90"
+          >
+            <div className={`p-2 rounded-lg ${isDark ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-50 text-purple-600'}`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-bold opacity-60">Analyze</span>
+          </button>
+          
+          <button 
+            onClick={handleGenerateQuiz}
+            disabled={materials.length === 0 || quizLoading}
+            className="flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-90"
+          >
+            <div className={`p-2 rounded-lg ${isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-bold opacity-60">Quiz</span>
+          </button>
+
+          <button 
+            onClick={handleGenerateFlashcards}
+            disabled={materials.length === 0 || flashcardsLoading}
+            className="flex flex-col items-center gap-1 p-2 rounded-xl transition-all active:scale-90"
+          >
+            <div className={`p-2 rounded-lg ${isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-bold opacity-60">Study</span>
+          </button>
+        </div>
+      </div>
+
       <style jsx global>{`
         @keyframes spin-slow {
           from { transform: rotate(360deg); }
