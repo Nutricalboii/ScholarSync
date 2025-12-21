@@ -13,11 +13,13 @@ app = FastAPI(title="ScholarSync API")
 
 # Enable CORS for frontend integration
 origins = [
-    "https://scholarsync-nutricalboii.vercel.app",
-    "https://scholarsync-tau.vercel.app", # Potential alternative
+    "https://scholar-sync.vercel.app",
+    "https://scholar-sync-tau.vercel.app",
+    "https://scholar-sync-nutricalboiis-projects.vercel.app",
     "http://localhost:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
 ]
 
 app.add_middleware(
