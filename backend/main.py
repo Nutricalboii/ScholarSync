@@ -163,6 +163,9 @@ async def analyze_connections():
         1. A general synthesis of how these documents connect and supplement each other.
         2. A structured 'Learning Path' (list of 4-6 specific steps) to master this content.
         
+        CRITICAL: If the materials contain math or numerical problems, use LaTeX formatting 
+        ($...$ for inline, $...$ for blocks) in your analysis.
+        
         Format your response as a JSON object:
         {{
             "analysis": "Your detailed synthesis text here...",
@@ -210,6 +213,9 @@ async def extract_concepts():
         prompt = """
         Extract the top 8-10 most important technical concepts or terms from the provided context.
         Also identify 5-8 relationships between these concepts.
+        
+        CRITICAL: For any mathematical formulas or numerical examples in the definitions, 
+        ALWAYS use LaTeX formatting with $ for inline and $ for blocks.
         
         For each concept, provide:
         1. The term itself.
