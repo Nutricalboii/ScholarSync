@@ -550,6 +550,7 @@ export default function Home() {
                   {flashcardsLoading ? "Generating..." : "Study Flashcards"}
                 </button>
               </div>
+            </div>
             )}
           </section>
 
