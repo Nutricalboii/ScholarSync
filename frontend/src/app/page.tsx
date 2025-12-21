@@ -571,6 +571,7 @@ export default function Home() {
                 </button>
               </div>
             </div>
+            )}
           </section>
           {concepts.length > 0 && (
             <section className={`p-6 rounded-2xl border transition-all animate-in fade-in slide-in-from-left-4
