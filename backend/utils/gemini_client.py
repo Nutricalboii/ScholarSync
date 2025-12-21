@@ -45,7 +45,7 @@ def get_gemini_response(prompt: str, context: str = "") -> str:
     if not client:
         return "Error: Gemini API client not configured."
     
-    system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
+    system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $$ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
     
     full_prompt = f"Context:\n{context}\n\nQuestion: {prompt}" if context else prompt
     
@@ -64,7 +64,7 @@ def get_structured_response(prompt: str, context: str = "") -> str:
     if not client:
         return "[]"
     
-    system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
+    system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $$ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
     
     full_prompt = f"Context:\n{context}\n\nInstruction: {prompt}" if context else prompt
     
@@ -74,6 +74,7 @@ def get_structured_response(prompt: str, context: str = "") -> str:
             contents=full_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
+                # Fix: remove mime type if it causes issues, or ensure it's correct
                 response_mime_type='application/json'
             )
         )

@@ -688,36 +688,6 @@ export default function Home() {
                         Upload your study materials and ask anything. 
                         I'll find connections across all your documents.
                       </p>
-
-                      <div className="flex flex-wrap justify-center gap-3">
-                        <button 
-                          onClick={handleAnalyze}
-                          disabled={materials.length === 0}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border
-                            ${materials.length > 0 ? (isDark ? 'border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20' : 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100') : 'opacity-30 cursor-not-allowed'}`}
-                        >
-                          Summarize Everything
-                        </button>
-                        <button 
-                          onClick={handleGenerateQuiz}
-                          disabled={materials.length === 0}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border
-                            ${materials.length > 0 ? (isDark ? 'border-purple-500/30 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20' : 'border-purple-200 bg-purple-50 text-purple-600 hover:bg-purple-100') : 'opacity-30 cursor-not-allowed'}`}
-                        >
-                          Take a Quiz
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setActiveTab('analysis');
-                            if (concepts.length === 0) fetchConcepts();
-                          }}
-                          disabled={materials.length === 0}
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border
-                            ${materials.length > 0 ? (isDark ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' : 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100') : 'opacity-30 cursor-not-allowed'}`}
-                        >
-                          View Concept Map
-                        </button>
-                      </div>
                     </div>
                   )}
 
