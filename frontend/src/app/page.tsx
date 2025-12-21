@@ -33,6 +33,7 @@ export default function Home() {
   const [flashcardsLoading, setFlashcardsLoading] = useState(false);
   const [isDark, setIsDark] = useState(true);
   const [itemCount, setItemCount] = useState(5);
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
 
   useEffect(() => {
     const container = document.getElementById('chat-container');
@@ -44,14 +45,26 @@ export default function Home() {
   const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000").replace(/\/$/, "");
 
   useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
+      console.warn("⚠️ NEXT_PUBLIC_BACKEND_URL is not set. Defaulting to localhost:8000");
+    }
+    
     const checkBackend = async () => {
+      setBackendStatus('checking');
       try {
+        console.log(`Checking backend at: ${backendUrl}`);
         const res = await fetch(`${backendUrl}/`, { 
           headers: { "bypass-tunnel-reminder": "true" } 
         });
-        if (!res.ok) console.warn("Backend is waking up...");
+        if (res.ok) {
+          setBackendStatus('online');
+        } else {
+          setBackendStatus('offline');
+          console.warn("Backend responded but with an error status.");
+        }
       } catch (err) {
-        console.error("Backend connection error", err);
+        setBackendStatus('offline');
+        console.error("Backend connection error details:", err);
       }
     };
     
@@ -123,7 +136,7 @@ export default function Home() {
       fetchConcepts();
       alert(`Successfully uploaded ${files.length} file(s)!`);
     } catch (err: any) {
-      setError(err.message || "Failed to connect to backend");
+      setError(`Connection Error: ${err.message || "Could not reach backend"}. If you just pushed, the server might still be waking up (can take 60s).`);
     } finally {
       setUploading(false);
     }
@@ -164,7 +177,7 @@ export default function Home() {
         setError(data.detail || "Query failed");
       }
     } catch (err) {
-      setError("Failed to connect to backend");
+      setError("Connection Error: Could not reach backend. Please check if the server is running and CORS is configured.");
     } finally {
       setLoading(false);
     }
@@ -324,6 +337,16 @@ export default function Home() {
               </svg>
             </div>
             <h1 className="text-xl font-bold tracking-tight">ScholarSync</h1>
+            <div className="flex items-center gap-1.5 ml-2 px-2 py-0.5 rounded-full bg-slate-800/50 border border-slate-700/50">
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                backendStatus === 'online' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 
+                backendStatus === 'checking' ? 'bg-amber-500 animate-pulse' : 'bg-red-500'
+              }`} />
+              <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">
+                {backendStatus === 'online' ? 'Backend Live' : 
+                 backendStatus === 'checking' ? 'Waking up...' : 'Offline'}
+              </span>
+            </div>
           </div>
           
           <div className="flex items-center gap-6">
