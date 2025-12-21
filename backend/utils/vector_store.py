@@ -29,17 +29,25 @@ class VectorStore:
         )
 
     def add_documents(self, texts: list[str], metadatas: list[dict], ids: list[str]):
-        """Adds documents to the vector store with embeddings."""
+        """Adds documents to the vector store with embeddings in batches."""
         if not texts:
             return
             
-        embeddings = get_embeddings(texts)
-        self.collection.add(
-            embeddings=embeddings,
-            documents=texts,
-            metadatas=metadatas,
-            ids=ids
-        )
+        batch_size = 50 # Safe batch size for Gemini embedding limits and memory
+        
+        for i in range(0, len(texts), batch_size):
+            batch_texts = texts[i:i + batch_size]
+            batch_metadatas = metadatas[i:i + batch_size]
+            batch_ids = ids[i:i + batch_size]
+            
+            batch_embeddings = get_embeddings(batch_texts)
+            
+            self.collection.add(
+                embeddings=batch_embeddings,
+                documents=batch_texts,
+                metadatas=batch_metadatas,
+                ids=batch_ids
+            )
 
     def query(self, query_text: str, n_results: int = 5):
         """Queries the vector store for similar documents."""

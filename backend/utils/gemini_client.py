@@ -1,7 +1,8 @@
+from google import genai
+from google.genai import types
 import os
 import time
 from functools import wraps
-from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,23 +16,26 @@ if API_KEY:
 else:
     print("Warning: GEMINI_API_KEY not found in environment variables.")
 
-def retry_with_backoff(retries=3, initial_delay=2):
+def retry_with_backoff(retries=5, initial_delay=5):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             delay = initial_delay
+            last_exception = None
             for i in range(retries):
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
+                    last_exception = e
                     error_str = str(e).upper()
-                    if ("429" in error_str or "RESOURCE_EXHAUSTED" in error_str) and i < retries - 1:
-                        print(f"Rate limit hit (429). Retrying in {delay}s... (Attempt {i+1}/{retries})")
+                    # Check for rate limits or overloaded models
+                    if any(err in error_str for err in ["429", "RESOURCE_EXHAUSTED", "503", "OVERLOADED"]) and i < retries - 1:
+                        print(f"Gemini API issue ({error_str[:50]}). Retrying in {delay}s... (Attempt {i+1}/{retries})")
                         time.sleep(delay)
                         delay *= 2
                         continue
                     raise e
-            return func(*args, **kwargs)
+            raise last_exception
         return wrapper
     return decorator
 
@@ -45,17 +49,14 @@ def get_gemini_response(prompt: str, context: str = "") -> str:
     
     full_prompt = f"Context:\n{context}\n\nQuestion: {prompt}" if context else prompt
     
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=full_prompt,
-            config={
-                'system_instruction': system_instruction
-            }
+    response = client.models.generate_content(
+        model='gemini-1.5-flash',
+        contents=full_prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=system_instruction
         )
-        return response.text
-    except Exception as e:
-        return f"Error calling Gemini API: {str(e)}"
+    )
+    return response.text
 
 @retry_with_backoff(retries=5, initial_delay=5)
 def get_structured_response(prompt: str, context: str = "") -> str:
@@ -63,19 +64,24 @@ def get_structured_response(prompt: str, context: str = "") -> str:
     if not client:
         return "[]"
     
+    system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
+    
     full_prompt = f"Context:\n{context}\n\nInstruction: {prompt}" if context else prompt
     
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash',
+            model='gemini-1.5-flash',
             contents=full_prompt,
-            config={
-                'response_mime_type': 'application/json',
-            }
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                response_mime_type='application/json'
+            )
         )
         return response.text
     except Exception as e:
-        # If JSON mode fails or isn't supported by the model version, fall back to standard response
+        # If JSON mode fails or isn't supported, fall back to standard response
+        # which will also be retried by its own decorator
+        print(f"Structured response failed, falling back: {str(e)}")
         return get_gemini_response(prompt, context)
 
 @retry_with_backoff(retries=5, initial_delay=5)
@@ -84,12 +90,8 @@ def get_embeddings(texts: list[str]) -> list[list[float]]:
     if not client:
         raise Exception("Gemini API client not configured.")
     
-    try:
-        response = client.models.embed_content(
-            model='text-embedding-004',
-            contents=texts
-        )
-        return [item.values for item in response.embeddings]
-    except Exception as e:
-        print(f"Error generating embeddings: {str(e)}")
-        raise e
+    response = client.models.embed_content(
+        model='text-embedding-004',
+        contents=texts
+    )
+    return [item.values for item in response.embeddings]
