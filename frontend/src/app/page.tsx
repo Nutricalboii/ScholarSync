@@ -45,6 +45,7 @@ export default function Home() {
   const [isDark, setIsDark] = useState(true);
   const [itemCount, setItemCount] = useState(5);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [showSidebar, setShowSidebar] = useState(false);
 
   useEffect(() => {
     const container = document.getElementById('chat-container');
@@ -101,8 +102,13 @@ export default function Home() {
     
     checkBackend();
     fetchMaterials();
-    fetchConcepts();
   }, []);
+
+  useEffect(() => {
+    if (materials.length > 0 && concepts.length === 0 && !conceptsLoading) {
+      fetchConcepts();
+    }
+  }, [materials]);
 
   const fetchMaterials = async () => {
     try {
@@ -383,28 +389,28 @@ export default function Home() {
       {/* Mesh Gradient Background */}
       <div className="fixed inset-0 z-0 mesh-gradient pointer-events-none opacity-50" />
 
-      <header className="fixed top-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-3xl px-6">
-        <div className={`rounded-3xl border shadow-2xl backdrop-blur-2xl transition-all duration-500 hover:scale-[1.01] ${isDark ? "bg-slate-900/40 border-slate-800/50" : "bg-white/40 border-white/50"}`}>
-          <div className="px-8 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-5">
+      <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-5xl px-4">
+        <div className={`rounded-2xl border shadow-xl backdrop-blur-2xl transition-all duration-500 ${isDark ? "bg-slate-900/40 border-slate-800/50" : "bg-white/40 border-white/50"}`}>
+          <div className="px-4 py-2 flex justify-between items-center">
+            <div className="flex items-center gap-3">
               <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
-                <div className="relative w-11 h-11 bg-slate-900 rounded-2xl flex items-center justify-center shadow-2xl border border-slate-800 transform transition-transform group-hover:scale-105 active:scale-95">
-                  <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000" />
+                <div className="relative w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center shadow-2xl border border-slate-800 transform transition-transform group-hover:scale-105 active:scale-95">
+                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.246 18.477 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
               </div>
               <div className="flex flex-col">
-                <h1 className="text-xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-500">ScholarSync</h1>
-                <div className="flex items-center gap-2">
-                  <div className={`w-1.5 h-1.5 rounded-full ${
-                    backendStatus === 'online' ? 'bg-green-500 animate-pulse-aura' : 
+                <h1 className="text-base font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-500">ScholarSync</h1>
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-1 h-1 rounded-full ${
+                    backendStatus === 'online' ? 'bg-green-500' : 
                     backendStatus === 'checking' ? 'bg-amber-500 animate-pulse' : 'bg-red-500'
                   }`} />
-                  <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40">
-                    {backendStatus === 'online' ? 'Engine Live' : 
-                     backendStatus === 'checking' ? 'Waking up' : 'Offline'}
+                  <span className="text-[8px] font-black uppercase tracking-[0.1em] opacity-40">
+                    {backendStatus === 'online' ? 'Live' : 
+                     backendStatus === 'checking' ? 'Wait' : 'Offline'}
                   </span>
                 </div>
               </div>
@@ -412,16 +418,24 @@ export default function Home() {
             
             <div className="flex items-center gap-2">
               <button 
+                onClick={() => setShowSidebar(!showSidebar)}
+                className={`lg:hidden w-8 h-8 rounded-xl flex items-center justify-center transition-all border ${isDark ? "bg-slate-800 border-slate-700 text-slate-400" : "bg-white border-slate-200 text-slate-600 shadow-sm"}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <button 
                 onClick={toggleTheme}
-                className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 border ${isDark ? "bg-slate-800 border-slate-700 text-yellow-400 hover:bg-slate-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"}`}
+                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 border ${isDark ? "bg-slate-800 border-slate-700 text-yellow-400" : "bg-white border-slate-200 text-slate-600 shadow-sm"}`}
                 title="Toggle Theme"
               >
                 {isDark ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 18v1m9-9h1M3 12h1m15.364-6.364l.707.707M6.343 17.657l.707.707m0-11.314l-.707.707m11.314 11.314l-.707.707M12 7a5 5 0 100 10 5 5 0 000-10z" />
                   </svg>
                 ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                   </svg>
                 )}
@@ -431,21 +445,34 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-4 pt-32 pb-10 grid grid-cols-1 lg:grid-cols-12 gap-8 h-screen overflow-hidden">
-        {/* Left Sidebar: Vault and Library */}
-        <div className="lg:col-span-3 space-y-8 overflow-y-auto pr-2 custom-scrollbar pb-32 no-scrollbar">
-          <div className={`p-2 rounded-[3rem] border backdrop-blur-3xl transition-all duration-700
+      <main className="relative z-10 max-w-7xl mx-auto px-4 pt-20 pb-10 flex flex-col lg:grid lg:grid-cols-12 gap-6 h-screen overflow-hidden">
+        {/* Sidebar: Now collapsible on mobile */}
+        <div className={`lg:col-span-3 space-y-4 overflow-y-auto pr-2 custom-scrollbar pb-10 
+          ${showSidebar ? 'fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-xl p-8 block' : 'hidden lg:block'}`}>
+          
+          {showSidebar && (
+            <button 
+              onClick={() => setShowSidebar(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+
+          <div className={`p-2 rounded-3xl border backdrop-blur-3xl transition-all duration-700
             ${isDark ? "bg-slate-900/20 border-slate-800/50" : "bg-white/20 border-slate-200/50"}`}>
             
-            <section className={`p-6 rounded-[2.5rem] transition-all duration-500 hover:scale-[1.01] active:scale-[0.99] group
+            <section className={`p-4 rounded-2xl transition-all duration-500 hover:scale-[1.01] active:scale-[0.99] group
               ${isDark ? "bg-slate-900/40 hover:bg-slate-900/60" : "bg-white/40 hover:bg-white/60 shadow-xl shadow-slate-200/20"}`}>
-              <div className="flex items-center gap-3 mb-6 opacity-40 group-hover:opacity-100 transition-opacity">
-                <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2 mb-4 opacity-40 group-hover:opacity-100 transition-opacity">
+                <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                 </div>
-                <h2 className="text-[10px] font-black uppercase tracking-[0.3em]">Vault</h2>
+                <h2 className="text-[9px] font-black uppercase tracking-[0.2em]">Vault</h2>
               </div>
               <form onSubmit={handleUpload} className="space-y-4">
                 <div className={`border-2 border-dashed rounded-[2rem] p-6 text-center transition-all cursor-pointer group/upload
@@ -542,32 +569,32 @@ export default function Home() {
         </div>
 
         {/* Main: Query Interface - ChatGPT Style */}
-        <div className="lg:col-span-9 flex flex-col h-full overflow-hidden pb-24">
-          <section className={`rounded-[2.5rem] border flex flex-col flex-grow overflow-hidden transition-all duration-500
-            ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200 shadow-2xl shadow-slate-200/50"}`}>
+        <div className="lg:col-span-9 flex flex-col h-full overflow-hidden pb-20">
+          <section className={`rounded-3xl border flex flex-col flex-grow overflow-hidden transition-all duration-500
+            ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200 shadow-xl shadow-slate-200/50"}`}>
             
-            <div className={`p-6 border-b flex justify-between items-center ${isDark ? "border-slate-800" : "border-slate-100"}`}>
-              <h2 className="text-xl font-black tracking-tight flex items-center gap-3">
+            <div className={`p-4 border-b flex justify-between items-center ${isDark ? "border-slate-800" : "border-slate-100"}`}>
+              <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse-aura"></span>
                 Assistant
               </h2>
-              <div className="flex items-center gap-4">
-                <div className={`flex p-1.5 rounded-2xl relative ${isDark ? 'bg-slate-950/80' : 'bg-slate-100'}`}>
+              <div className="flex items-center gap-2">
+                <div className={`flex p-1 rounded-xl relative ${isDark ? 'bg-slate-950/80' : 'bg-slate-100'}`}>
                   {/* Sliding Background */}
                   <div 
-                    className={`absolute top-1.5 bottom-1.5 transition-all duration-300 ease-out rounded-xl shadow-sm
-                      ${activeTab === 'research' ? 'left-1.5 w-[calc(50%-1.5px-0.375rem)] bg-blue-600' : 'left-[calc(50%+0.375rem-1.5px)] w-[calc(50%-1.5px-0.375rem)] bg-purple-600'}`}
+                    className={`absolute top-1 bottom-1 transition-all duration-300 ease-out rounded-lg shadow-sm
+                      ${activeTab === 'research' ? 'left-1 w-[calc(50%-1px-0.25rem)] bg-blue-600' : 'left-[calc(50%+0.25rem-1px)] w-[calc(50%-1px-0.25rem)] bg-purple-600'}`}
                   />
                   <button 
                     onClick={() => setActiveTab('research')}
-                    className={`relative z-10 px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300
+                    className={`relative z-10 px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] transition-all duration-300
                       ${activeTab === 'research' ? 'text-white' : (isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600')}`}
                   >
                     Research
                   </button>
                   <button 
                     onClick={() => setActiveTab('analysis')}
-                    className={`relative z-10 px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300
+                    className={`relative z-10 px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-[0.1em] transition-all duration-300
                       ${activeTab === 'analysis' ? 'text-white' : (isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600')}`}
                   >
                     Analysis
@@ -576,7 +603,7 @@ export default function Home() {
               </div>
             </div>
             
-            <div className="flex-grow p-4 overflow-y-auto space-y-6 custom-scrollbar" id="chat-container">
+            <div className="flex-grow p-3 overflow-y-auto space-y-4 custom-scrollbar" id="chat-container">
               {activeTab === 'research' ? (
                 <>
                   {error && (
@@ -672,32 +699,34 @@ export default function Home() {
                                   const target = e.currentTarget;
                                   target.classList.toggle('flashcard-flipped');
                                 }}
-                                className="group w-full max-w-[320px] h-56 [perspective:1000px] cursor-pointer"
+                                className="group w-full max-w-[320px] h-64 [perspective:1000px] cursor-pointer"
                               >
-                                <div className="flashcard-inner relative w-full h-full transition-all duration-700 preserve-3d">
+                                <div className="flashcard-inner relative w-full h-full transition-all duration-700" style={{ transformStyle: 'preserve-3d' }}>
                                   {/* Front */}
-                                  <div className={`flashcard-front absolute inset-0 w-full h-full p-8 flex flex-col items-center justify-center text-center rounded-[2.5rem] border-2 backface-hidden shadow-xl
-                                    ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/50'}`}>
+                                  <div className={`flashcard-front absolute inset-0 w-full h-full p-8 flex flex-col items-center justify-center text-center rounded-[2.5rem] border-2 shadow-xl
+                                    ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/50'}`}
+                                    style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
                                     <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
                                       <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500/50">Question</span>
                                     </div>
-                                    <p className="text-sm font-bold leading-relaxed opacity-90">{fc.front}</p>
+                                    <div className="text-sm font-bold leading-relaxed opacity-90 max-h-full overflow-y-auto custom-scrollbar">{fc.front}</div>
                                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 opacity-20 group-hover:opacity-40 transition-opacity">
-                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <svg className="w-3 h-3 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                       </svg>
-                                      <span className="text-[9px] font-black uppercase tracking-widest">Flip</span>
+                                      <span className="text-[9px] font-black uppercase tracking-widest">Flip Card</span>
                                     </div>
                                   </div>
                                   {/* Back */}
-                                  <div className={`flashcard-back absolute inset-0 w-full h-full p-8 flex flex-col items-center justify-center text-center rounded-[2.5rem] border-2 backface-hidden shadow-2xl
-                                    ${isDark ? 'bg-blue-600 border-blue-500 shadow-blue-900/20' : 'bg-blue-600 border-blue-500 shadow-blue-200'}`}>
+                                  <div className={`flashcard-back absolute inset-0 w-full h-full p-8 flex flex-col items-center justify-center text-center rounded-[2.5rem] border-2 shadow-2xl
+                                    ${isDark ? 'bg-indigo-600 border-indigo-500 shadow-indigo-900/40' : 'bg-blue-600 border-blue-500 shadow-blue-200'}`}
+                                    style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
                                     <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-blue-100" />
-                                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-100/50">Answer</span>
+                                      <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
+                                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Answer</span>
                                     </div>
-                                    <p className="text-sm font-bold leading-relaxed text-white">{fc.back}</p>
+                                    <div className="text-sm font-bold leading-relaxed text-white max-h-full overflow-y-auto custom-scrollbar">{fc.back}</div>
                                   </div>
                                 </div>
                               </div>
@@ -752,36 +781,32 @@ export default function Home() {
                 </>
               ) : (
                 <div className="h-full flex flex-col animate-in fade-in duration-500">
-                  {concepts.length === 0 && !conceptsLoading ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                      <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 
-                        ${isDark ? 'bg-purple-500/10' : 'bg-purple-50'}`}>
-                        <svg className="w-10 h-10 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                        </svg>
+                  {materials.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-6">
+                      <div className="relative">
+                        <div className="absolute -inset-4 bg-blue-500/20 rounded-full blur-2xl animate-pulse" />
+                        <div className="relative w-20 h-20 bg-slate-900 rounded-3xl border border-slate-800 flex items-center justify-center shadow-2xl">
+                          <svg className="w-10 h-10 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
                       </div>
-                      <h3 className="text-xl font-bold mb-2">Knowledge Graph Analysis</h3>
-                      <p className="text-sm opacity-50 max-w-sm mb-8 leading-relaxed">
-                        I'll analyze your materials to extract key concepts and visualize how they connect to each other.
-                      </p>
-                      <button 
-                        onClick={fetchConcepts}
-                        className="px-8 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold transition-all shadow-lg shadow-purple-600/30 flex items-center gap-2"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                        Start Analysis
-                      </button>
+                      <div className="space-y-2">
+                        <h3 className="text-xl font-bold">No Materials Found</h3>
+                        <p className="text-slate-400 max-w-sm mx-auto text-sm">
+                          Upload your study materials in the Vault to start the deep analysis.
+                        </p>
+                      </div>
                     </div>
                   ) : conceptsLoading ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                      <div className="relative w-20 h-20 mb-8">
-                        <div className="absolute inset-0 rounded-full border-4 border-purple-500/20 border-t-purple-500 animate-spin" />
-                        <div className="absolute inset-3 rounded-full border-4 border-blue-500/20 border-b-blue-500 animate-spin-slow" />
-                      </div>
-                      <h3 className="text-xl font-bold mb-2">Analyzing Concepts...</h3>
-                      <p className="text-sm opacity-50 animate-pulse">Scanning through all uploaded materials for connections</p>
+                    <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+                      <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Analyzing Knowledge Base...</p>
+                    </div>
+                  ) : concepts.length === 0 ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-6">
+                       <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+                       <p className="text-slate-400">Extracting concepts...</p>
                     </div>
                   ) : (
                     <div className="space-y-8 pb-10">
@@ -955,31 +980,31 @@ export default function Home() {
               )}
             </div>
 
-            <div className={`p-6 border-t transition-all ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-slate-50 border-slate-100"}`}>
+            <div className={`p-4 border-t transition-all ${isDark ? "bg-slate-900/50 border-slate-800" : "bg-slate-50 border-slate-100"}`}>
               {activeTab === 'research' ? (
-                <form onSubmit={handleQuery} className="relative flex gap-3 max-w-4xl mx-auto">
+                <form onSubmit={handleQuery} className="relative flex gap-2 max-w-4xl mx-auto">
                   <input
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Ask a question about your study materials..."
-                    className={`flex-grow px-6 py-4 rounded-2xl outline-none transition-all font-medium
+                    placeholder="Ask a question..."
+                    className={`flex-grow px-4 py-3 rounded-xl outline-none transition-all text-sm
                       ${isDark 
-                        ? "bg-slate-800 border-2 border-slate-700 focus:border-blue-500/50 text-slate-100" 
-                        : "bg-white border-2 border-slate-200 focus:border-blue-500 shadow-sm text-slate-900"}`}
+                        ? "bg-slate-800 border border-slate-700 focus:border-blue-500/50 text-slate-100" 
+                        : "bg-white border border-slate-200 focus:border-blue-500 shadow-sm text-slate-900"}`}
                   />
                   <button
                     type="submit"
                     disabled={!query || loading}
-                    className={`px-6 py-4 rounded-2xl font-bold transition-all transform active:scale-95 flex items-center gap-2
+                    className={`px-4 py-3 rounded-xl font-bold transition-all transform active:scale-95 flex items-center gap-2
                       ${query && !loading 
                         ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/30" 
                         : "bg-slate-800 text-slate-500 cursor-not-allowed"}`}
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    <span>Ask</span>
+                    <span className="text-xs">Ask</span>
                   </button>
                 </form>
               ) : (
@@ -993,17 +1018,17 @@ export default function Home() {
       </main>
 
       {/* MacOS-style Action Dock */}
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 hidden lg:block">
-        <div className={`flex items-center gap-2 p-2 rounded-[2.5rem] border shadow-2xl backdrop-blur-3xl transition-all duration-500 hover:scale-[1.02]
-          ${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white/60 border-slate-200/50'}`}>
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 hidden lg:block group/dock">
+        <div className={`flex items-center gap-1 p-1.5 rounded-[2.5rem] border shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-3xl transition-all duration-500 hover:scale-[1.02]
+          ${isDark ? 'bg-slate-900/40 border-slate-700/50 hover:bg-slate-900/60' : 'bg-white/40 border-white/50 hover:bg-white/60'}`}>
           
           <button 
             onClick={handleAnalyze}
             disabled={materials.length === 0 || loading}
-            className={`flex items-center gap-3 px-6 py-3.5 rounded-[1.8rem] transition-all transform active:scale-95 group relative overflow-hidden
-              ${materials.length === 0 || loading ? 'opacity-40 cursor-not-allowed' : 'hover:bg-purple-500/10'}`}
+            className={`flex items-center gap-3 px-6 py-3 rounded-[2rem] transition-all transform active:scale-95 group relative overflow-hidden
+              ${materials.length === 0 || loading ? 'opacity-40 cursor-not-allowed' : 'hover:bg-purple-500/10 hover:shadow-inner'}`}
           >
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110 group-hover:rotate-6
               ${isDark ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-50 text-purple-600'}`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -1013,6 +1038,9 @@ export default function Home() {
               <span className="text-[10px] font-black uppercase tracking-[0.2em]">Analyze</span>
               <span className="text-[8px] opacity-40 font-bold uppercase tracking-wider">Deep Insights</span>
             </div>
+            {activeTab === 'analysis' && (
+              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-purple-500" />
+            )}
           </button>
 
           <div className="w-px h-8 bg-slate-700/20 mx-1" />
@@ -1020,10 +1048,10 @@ export default function Home() {
           <button 
             onClick={handleGenerateQuiz}
             disabled={materials.length === 0 || quizLoading}
-            className={`flex items-center gap-3 px-6 py-3.5 rounded-[1.8rem] transition-all transform active:scale-95 group
-              ${materials.length === 0 || quizLoading ? 'opacity-40 cursor-not-allowed' : 'hover:bg-amber-500/10'}`}
+            className={`flex items-center gap-3 px-6 py-3 rounded-[2rem] transition-all transform active:scale-95 group relative
+              ${materials.length === 0 || quizLoading ? 'opacity-40 cursor-not-allowed' : 'hover:bg-amber-500/10 hover:shadow-inner'}`}
           >
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110 group-hover:-rotate-6
               ${isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -1040,10 +1068,10 @@ export default function Home() {
           <button 
             onClick={handleGenerateFlashcards}
             disabled={materials.length === 0 || flashcardsLoading}
-            className={`flex items-center gap-3 px-6 py-3.5 rounded-[1.8rem] transition-all transform active:scale-95 group
-              ${materials.length === 0 || flashcardsLoading ? 'opacity-40 cursor-not-allowed' : 'hover:bg-emerald-500/10'}`}
+            className={`flex items-center gap-3 px-6 py-3 rounded-[2rem] transition-all transform active:scale-95 group relative
+              ${materials.length === 0 || flashcardsLoading ? 'opacity-40 cursor-not-allowed' : 'hover:bg-emerald-500/10 hover:shadow-inner'}`}
           >
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110 group-hover:rotate-12
               ${isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -1059,17 +1087,11 @@ export default function Home() {
 
           <div className="flex items-center gap-1 px-2">
             <button 
-              onClick={toggleTheme}
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 transform hover:scale-110 active:scale-90
-                ${isDark ? "bg-slate-800 text-amber-400 hover:bg-slate-700" : "bg-slate-100 text-blue-600 hover:bg-white hover:shadow-lg"}`}
-            >
-              {isDark ? "☀️" : "🌙"}
-            </button>
-            <button 
               onClick={clearMaterials}
-              className="w-12 h-12 rounded-2xl flex items-center justify-center text-slate-500 hover:bg-rose-500/10 hover:text-rose-500 transition-all duration-500 transform hover:scale-110 active:scale-90"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:bg-rose-500/10 hover:text-rose-500 transition-all duration-500 transform hover:scale-110 active:scale-90"
+              title="Clear All Materials"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
