@@ -1,5 +1,8 @@
 🎓 ScholarSync: The AI-Powered "Second Brain" for Students
-ScholarSync is an advanced educational ecosystem that transforms static, disconnected PDFs into an interactive, interconnected knowledge base. Built for the TechSprint Hackathon, it leverages Google Gemini 1.5 Flash to help students synthesize information across their entire library of notes and textbooks simultaneously.
+ScholarSync is an advanced educational ecosystem that transforms static, disconnected PDFs into an interactive, interconnected knowledge base. Built for the TechSprint Hackathon, it leverages Google Gemini 2.0 Flash to help students synthesize information across their entire library of notes and textbooks simultaneously.
+
+🚀 **Live Demo:** [https://scholarsync-nutricalboii.vercel.app](https://scholarsync-nutricalboii.vercel.app)
+⚙️ **Backend API:** [https://scholarsync-jh4j.onrender.com](https://scholarsync-jh4j.onrender.com)
 
 📺 Project Overview
 The Problem: Students suffer from "Information Silos"—knowledge is trapped in separate PDFs, making it hard to see the "big picture" across different subjects.
@@ -30,14 +33,14 @@ Backend: FastAPI (Python 3.10+), ChromaDB (Vector Store), PyPDF.
 
 AI Engine:
 
-LLM: gemini-1.5-flash for high-speed reasoning and structured JSON output.
+LLM: gemini-2.0-flash for high-speed reasoning and structured JSON output.
 
 Embeddings: text-embedding-004 for superior semantic search accuracy.
 
 🛡️ Google Technology Integration
 This project is built from the ground up to showcase the power of Google’s AI stack:
 
-Gemini 1.5 Flash: Utilized for its massive context window, allowing the system to "read" multiple textbooks at once.
+Gemini 2.0 Flash: Utilized for its massive context window and multimodal capabilities, allowing the system to "read" multiple textbooks at once.
 
 Google AI Studio: Used for rapid prototyping and fine-tuning system instructions.
 

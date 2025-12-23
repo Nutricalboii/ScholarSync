@@ -85,7 +85,9 @@ class Flashcard(BaseModel):
 class FlashcardsResponse(BaseModel):
     flashcards: List[Flashcard]
 
+@app.get("/", methods=["GET", "HEAD"])
 @app.get("/")
+@app.head("/")
 async def root():
     return {"status": "online", "message": "ScholarSync API is running"}
 
