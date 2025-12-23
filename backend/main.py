@@ -234,10 +234,10 @@ async def extract_concepts(x_session_id: Optional[str] = Header(None)):
         3. A short description of the relationship (e.g., "is a type of", "uses", "depends on").
         
         Format the output as a JSON object with two keys: "concepts" (list of objects) and "links" (list of objects).
-        Example: {
+        Example: {{
             "concepts": [{"term": "HTML", "definition": "...", "importance": 10}],
             "links": [{"source": "HTML", "target": "Web Browser", "relationship": "rendered by"}]
-        }
+        }}
         Only return the JSON object, nothing else.
         """
         
@@ -289,7 +289,7 @@ async def generate_quiz(request: GenerateRequest = GenerateRequest(count=3), x_s
         4. A brief explanation of why the answer is correct.
         
         Format the output as a JSON list of objects with keys: "id", "question", "options", "correct_answer", "explanation".
-        Example: [{"id": 1, "question": "...", "options": ["A", "B", "C", "D"], "correct_answer": "A", "explanation": "..."}]
+        Example: [{{ "id": 1, "question": "...", "options": ["A", "B", "C", "D"], "correct_answer": "A", "explanation": "..." }}]
         Only return the JSON list, nothing else.
         """
         
@@ -331,7 +331,7 @@ async def generate_flashcards(request: GenerateRequest = GenerateRequest(count=5
         Focus on core concepts that are essential for exams.
         
         Format the output as a JSON list of objects with keys: "front", "back".
-        Example: [{"front": "What is HTML?", "back": "HyperText Markup Language..."}]
+        Example: [{{ "front": "What is HTML?", "back": "HyperText Markup Language..." }}]
         Only return the JSON list, nothing else.
         """
         
