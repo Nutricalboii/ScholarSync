@@ -42,29 +42,36 @@ def retry_with_backoff(retries=3, initial_delay=2):
 @retry_with_backoff(retries=5, initial_delay=5)
 def get_gemini_response(prompt: str, context: str = "") -> str:
     """Generates a response from Gemini using the provided context."""
+    print(f"DEBUG: Generating text response for prompt: {prompt[:50]}...")
     if not client:
         return "Error: Gemini API client not configured."
     
-    system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $$ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
+    system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
     
     full_prompt = f"Context:\n{context}\n\nQuestion: {prompt}" if context else prompt
     
-    response = client.models.generate_content(
-        model='gemini-2.0-flash',
-        contents=full_prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=system_instruction
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=full_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction
+            )
         )
-    )
-    return response.text
+        print(f"DEBUG: Successfully received response (length: {len(response.text)})")
+        return response.text
+    except Exception as e:
+        print(f"DEBUG: API Call Error: {str(e)}")
+        raise e
 
 @retry_with_backoff(retries=5, initial_delay=5)
 def get_structured_response(prompt: str, context: str = "") -> str:
     """Generates a response from Gemini that is expected to be structured (like JSON)."""
+    print(f"DEBUG: Generating structured response for prompt: {prompt[:50]}...")
     if not client:
         return "[]"
     
-    system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $$ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
+    system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
     
     full_prompt = f"Context:\n{context}\n\nInstruction: {prompt}" if context else prompt
     
@@ -78,8 +85,10 @@ def get_structured_response(prompt: str, context: str = "") -> str:
                 response_mime_type='application/json'
             )
         )
+        print(f"DEBUG: Successfully received structured response (length: {len(response.text)})")
         return response.text
     except Exception as e:
+        print(f"DEBUG: Structured API Call Error: {str(e)}")
         # If JSON mode fails or isn't supported, fall back to standard response
         # which will also be retried by its own decorator
         print(f"Structured response failed, falling back: {str(e)}")

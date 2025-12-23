@@ -242,13 +242,19 @@ export default function Home() {
     setChatHistory(prev => [...prev, { role: 'user', content: "Analyze connections across all my materials." }]);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout for deep analysis
+
       const res = await fetch(`${backendUrl}/analyze`, {
         method: "POST",
         headers: { 
           "bypass-tunnel-reminder": "true",
           "X-Session-ID": sessionId
-        }
+        },
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = await res.json();
@@ -264,8 +270,10 @@ export default function Home() {
         setError(errorMessage);
         setChatHistory(prev => [...prev, { role: 'assistant', content: `Sorry, I couldn't perform the analysis: ${errorMessage}` }]);
       }
-    } catch (err) {
-      setError("Failed to connect to backend");
+    } catch (err: any) {
+      const msg = err.name === 'AbortError' ? "Analysis timed out. Try with fewer documents." : "Failed to connect to backend";
+      setError(msg);
+      setChatHistory(prev => [...prev, { role: 'assistant', content: `System Error: ${msg}` }]);
     } finally {
       setLoading(false);
     }
@@ -281,15 +289,21 @@ export default function Home() {
     setChatHistory(prev => [...prev, { role: 'user', content: "Generate a practice quiz for me." }]);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
       const res = await fetch(`${backendUrl}/quiz`, {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           "bypass-tunnel-reminder": "true",
           "X-Session-ID": sessionId
         },
-        body: JSON.stringify({ count: itemCount })
+        body: JSON.stringify({ count: itemCount }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = await res.json();
@@ -304,8 +318,10 @@ export default function Home() {
         setError(errorMessage);
         setChatHistory(prev => [...prev, { role: 'assistant', content: `Sorry, I couldn't generate the quiz: ${errorMessage}` }]);
       }
-    } catch (err) {
-      setError("Failed to connect to backend");
+    } catch (err: any) {
+      const msg = err.name === 'AbortError' ? "Request timed out (60s). Please try again." : "Failed to connect to backend";
+      setError(msg);
+      setChatHistory(prev => [...prev, { role: 'assistant', content: `System Error: ${msg}` }]);
     } finally {
       setQuizLoading(false);
     }
