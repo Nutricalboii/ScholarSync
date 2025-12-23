@@ -1,7 +1,7 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import uvicorn
 
 from utils.pdf_processor import extract_text_from_pdf, chunk_text
@@ -90,7 +90,8 @@ async def root():
     return {"status": "online", "message": "ScholarSync API is running"}
 
 @app.post("/upload")
-async def upload_material(file: UploadFile = File(...)):
+async def upload_material(file: UploadFile = File(...), x_session_id: Optional[str] = Header(None)):
+    session_id = x_session_id or "default_user"
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
     
@@ -98,15 +99,12 @@ async def upload_material(file: UploadFile = File(...)):
         content = await file.read()
         text = extract_text_from_pdf(content)
         
-        # Add to in-memory list for UI tracking
-        study_materials.append({"filename": file.filename})
-        
-        # Chunk text and add to vector store
+        # Chunk text and add to vector store with session isolation
         chunks = chunk_text(text)
         metadatas = [{"filename": file.filename, "chunk_index": i} for i in range(len(chunks))]
         ids = [f"{file.filename}_{i}_{str(uuid.uuid4())[:8]}" for i in range(len(chunks))]
         
-        vector_store.add_documents(chunks, metadatas, ids)
+        vector_store.add_documents(session_id, chunks, metadatas, ids)
         
         return {
             "message": f"Successfully uploaded {file.filename}", 
@@ -118,10 +116,11 @@ async def upload_material(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
 
 @app.post("/query", response_model=QueryResponse)
-async def query_materials(request: QueryRequest):
+async def query_materials(request: QueryRequest, x_session_id: Optional[str] = Header(None)):
+    session_id = x_session_id or "default_user"
     try:
-        # Perform semantic search
-        search_results = vector_store.query(request.prompt, n_results=5)
+        # Perform semantic search with session isolation
+        search_results = vector_store.query(session_id, request.prompt, n_results=5)
         
         sources = []
         context = ""
@@ -150,14 +149,16 @@ async def query_materials(request: QueryRequest):
         raise HTTPException(status_code=500, detail=f"Error querying materials: {str(e)}")
 
 @app.post("/analyze", response_model=AnalysisResponse)
-async def analyze_connections():
-    if not study_materials:
+async def analyze_connections(x_session_id: Optional[str] = Header(None)):
+    session_id = x_session_id or "default_user"
+    materials = vector_store.get_all_materials(session_id)
+    if not materials:
         raise HTTPException(status_code=400, detail="No materials uploaded for analysis.")
     
     try:
         # Get a broad overview of all documents by querying for general themes
         # We'll use a summary of each document as context
-        filenames = [m["filename"] for m in study_materials]
+        filenames = [m["filename"] for m in materials]
         
         analysis_prompt = f"""
         Analyze the following study materials: {', '.join(filenames)}.
@@ -176,7 +177,7 @@ async def analyze_connections():
         }}
         """
         
-        search_results = vector_store.query("What are the key concepts and main topics in these documents?", n_results=15)
+        search_results = vector_store.query(session_id, "What are the key concepts and main topics in these documents?", n_results=15)
         context = "\n\n---\n\n".join(search_results['documents'][0]) if search_results['documents'] else ""
         
         from utils.gemini_client import get_structured_response
@@ -201,13 +202,15 @@ async def analyze_connections():
         raise HTTPException(status_code=500, detail=f"Error performing analysis: {str(e)}")
 
 @app.post("/concepts", response_model=ConceptsResponse)
-async def extract_concepts():
-    if not study_materials:
+async def extract_concepts(x_session_id: Optional[str] = Header(None)):
+    session_id = x_session_id or "default_user"
+    materials = vector_store.get_all_materials(session_id)
+    if not materials:
         raise HTTPException(status_code=400, detail="No materials uploaded.")
     
     try:
         # Query for a wide variety of chunks to extract concepts
-        search_results = vector_store.query("What are the most important technical terms, concepts, and definitions in these materials?", n_results=20)
+        search_results = vector_store.query(session_id, "What are the most important technical terms, concepts, and definitions in these materials?", n_results=20)
         
         context = ""
         if search_results and search_results['documents'] and search_results['documents'][0]:
@@ -263,13 +266,15 @@ async def extract_concepts():
         raise HTTPException(status_code=500, detail=f"Error extracting concepts: {str(e)}")
 
 @app.post("/quiz", response_model=QuizResponse)
-async def generate_quiz(request: GenerateRequest = GenerateRequest(count=3)):
-    if not study_materials:
+async def generate_quiz(request: GenerateRequest = GenerateRequest(count=3), x_session_id: Optional[str] = Header(None)):
+    session_id = x_session_id or "default_user"
+    materials = vector_store.get_all_materials(session_id)
+    if not materials:
         raise HTTPException(status_code=400, detail="No materials uploaded.")
     
     try:
         # Get core content for quiz generation
-        search_results = vector_store.query("What are the most important facts, dates, and technical details in these materials?", n_results=15)
+        search_results = vector_store.query(session_id, "What are the most important facts, dates, and technical details in these materials?", n_results=15)
         
         context = ""
         if search_results and search_results['documents'] and search_results['documents'][0]:
@@ -310,12 +315,14 @@ async def generate_quiz(request: GenerateRequest = GenerateRequest(count=3)):
         raise HTTPException(status_code=500, detail=f"Error generating quiz: {str(e)}")
 
 @app.post("/flashcards", response_model=FlashcardsResponse)
-async def generate_flashcards(request: GenerateRequest = GenerateRequest(count=5)):
-    if not study_materials:
+async def generate_flashcards(request: GenerateRequest = GenerateRequest(count=5), x_session_id: Optional[str] = Header(None)):
+    session_id = x_session_id or "default_user"
+    materials = vector_store.get_all_materials(session_id)
+    if not materials:
         raise HTTPException(status_code=400, detail="No materials uploaded.")
     
     try:
-        search_results = vector_store.query("What are the key definitions, formulas, and core concepts in these materials?", n_results=15)
+        search_results = vector_store.query(session_id, "What are the key definitions, formulas, and core concepts in these materials?", n_results=15)
         context = "\n\n---\n\n".join(search_results['documents'][0]) if search_results['documents'] else ""
         
         prompt = f"""
@@ -348,22 +355,21 @@ async def generate_flashcards(request: GenerateRequest = GenerateRequest(count=5
         raise HTTPException(status_code=500, detail=f"Error generating flashcards: {str(e)}")
 
 @app.get("/materials")
-async def list_materials():
-    return study_materials
+async def list_materials(x_session_id: Optional[str] = Header(None)):
+    session_id = x_session_id or "default_user"
+    return vector_store.get_all_materials(session_id)
 
 @app.delete("/materials/{filename}")
-async def delete_material(filename: str):
-    global study_materials
-    # Remove from in-memory list
-    study_materials = [m for m in study_materials if m["filename"] != filename]
+async def delete_material(filename: str, x_session_id: Optional[str] = Header(None)):
+    session_id = x_session_id or "default_user"
     # Remove from vector store
-    vector_store.delete_file(filename)
+    vector_store.delete_file(session_id, filename)
     return {"message": f"Successfully deleted {filename}"}
 
 @app.delete("/materials")
-async def clear_materials():
-    study_materials.clear()
-    vector_store.clear_all()
+async def clear_materials(x_session_id: Optional[str] = Header(None)):
+    session_id = x_session_id or "default_user"
+    vector_store.clear_all(session_id)
     return {"message": "All materials cleared"}
 
 if __name__ == "__main__":

@@ -6,6 +6,17 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 
 export default function Home() {
+  const [sessionId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      let id = localStorage.getItem('scholar_sync_session');
+      if (!id) {
+        id = 'user_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('scholar_sync_session', id);
+      }
+      return id;
+    }
+    return 'default';
+  });
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [query, setQuery] = useState("");
@@ -96,7 +107,10 @@ export default function Home() {
   const fetchMaterials = async () => {
     try {
       const res = await fetch(`${backendUrl}/materials`, {
-        headers: { "bypass-tunnel-reminder": "true" }
+        headers: { 
+          "bypass-tunnel-reminder": "true",
+          "X-Session-ID": sessionId
+        }
       });
       if (res.ok) {
         const data = await res.json();
@@ -113,7 +127,10 @@ export default function Home() {
     try {
       const res = await fetch(`${backendUrl}/concepts`, { 
         method: "POST",
-        headers: { "bypass-tunnel-reminder": "true" }
+        headers: { 
+          "bypass-tunnel-reminder": "true",
+          "X-Session-ID": sessionId
+        }
       });
       if (res.ok) {
         const data = await res.json();
@@ -142,7 +159,10 @@ export default function Home() {
         const res = await fetch(`${backendUrl}/upload`, {
           method: "POST",
           body: formData,
-          headers: { "bypass-tunnel-reminder": "true" }
+          headers: { 
+            "bypass-tunnel-reminder": "true",
+            "X-Session-ID": sessionId
+          }
         });
 
         if (!res.ok) {
@@ -180,7 +200,8 @@ export default function Home() {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "bypass-tunnel-reminder": "true"
+          "bypass-tunnel-reminder": "true",
+          "X-Session-ID": sessionId
         },
         body: JSON.stringify({ prompt: searchTerms }),
       });
@@ -217,7 +238,10 @@ export default function Home() {
     try {
       const res = await fetch(`${backendUrl}/analyze`, {
         method: "POST",
-        headers: { "bypass-tunnel-reminder": "true" }
+        headers: { 
+          "bypass-tunnel-reminder": "true",
+          "X-Session-ID": sessionId
+        }
       });
 
       if (res.ok) {
@@ -253,7 +277,8 @@ export default function Home() {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "bypass-tunnel-reminder": "true" 
+          "bypass-tunnel-reminder": "true",
+          "X-Session-ID": sessionId
         },
         body: JSON.stringify({ count: itemCount })
       });
@@ -290,7 +315,8 @@ export default function Home() {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "bypass-tunnel-reminder": "true" 
+          "bypass-tunnel-reminder": "true",
+          "X-Session-ID": sessionId
         },
         body: JSON.stringify({ count: itemCount })
       });
@@ -317,7 +343,10 @@ export default function Home() {
     try {
       const res = await fetch(`${backendUrl}/materials/${encodeURIComponent(filename)}`, {
         method: "DELETE",
-        headers: { "bypass-tunnel-reminder": "true" }
+        headers: { 
+          "bypass-tunnel-reminder": "true",
+          "X-Session-ID": sessionId
+        }
       });
       if (res.ok) {
         fetchMaterials();
@@ -332,7 +361,10 @@ export default function Home() {
     try {
       await fetch(`${backendUrl}/materials`, { 
         method: "DELETE",
-        headers: { "bypass-tunnel-reminder": "true" }
+        headers: { 
+          "bypass-tunnel-reminder": "true",
+          "X-Session-ID": sessionId
+        }
       });
       setMaterials([]);
       setConcepts([]);
@@ -347,318 +379,200 @@ export default function Home() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDark ? "bg-slate-950 text-slate-50" : "bg-slate-50 text-slate-900"} font-sans`}>
-      <header className={`border-b sticky top-0 z-10 ${isDark ? "bg-slate-900/80 border-slate-800 backdrop-blur-md" : "bg-white/80 border-slate-200 backdrop-blur-md"}`}>
-        <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.246 18.477 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
+    <div className={`min-h-screen transition-colors duration-500 ${isDark ? "bg-slate-950 text-slate-50" : "bg-slate-50 text-slate-900"} font-sans relative overflow-hidden`}>
+      {/* Mesh Gradient Background */}
+      <div className="fixed inset-0 z-0 mesh-gradient pointer-events-none opacity-50" />
+
+      <header className="fixed top-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-3xl px-6">
+        <div className={`rounded-3xl border shadow-2xl backdrop-blur-2xl transition-all duration-500 hover:scale-[1.01] ${isDark ? "bg-slate-900/40 border-slate-800/50" : "bg-white/40 border-white/50"}`}>
+          <div className="px-8 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-5">
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
+                <div className="relative w-11 h-11 bg-slate-900 rounded-2xl flex items-center justify-center shadow-2xl border border-slate-800 transform transition-transform group-hover:scale-105 active:scale-95">
+                  <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.246 18.477 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-500">ScholarSync</h1>
+                <div className="flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${
+                    backendStatus === 'online' ? 'bg-green-500 animate-pulse-aura' : 
+                    backendStatus === 'checking' ? 'bg-amber-500 animate-pulse' : 'bg-red-500'
+                  }`} />
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-40">
+                    {backendStatus === 'online' ? 'Engine Live' : 
+                     backendStatus === 'checking' ? 'Waking up' : 'Offline'}
+                  </span>
+                </div>
+              </div>
             </div>
-            <h1 className="text-xl font-bold tracking-tight">ScholarSync</h1>
-            <div className="flex items-center gap-1.5 ml-2 px-2 py-0.5 rounded-full bg-slate-800/50 border border-slate-700/50">
-              <div className={`w-1.5 h-1.5 rounded-full ${
-                backendStatus === 'online' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 
-                backendStatus === 'checking' ? 'bg-amber-500 animate-pulse' : 'bg-red-500'
-              }`} />
-              <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">
-                {backendStatus === 'online' ? 'Backend Live' : 
-                 backendStatus === 'checking' ? 'Waking up...' : 'Offline'}
-              </span>
+            
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={toggleTheme}
+                className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 border ${isDark ? "bg-slate-800 border-slate-700 text-yellow-400 hover:bg-slate-700" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"}`}
+                title="Toggle Theme"
+              >
+                {isDark ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 18v1m9-9h1M3 12h1m15.364-6.364l.707.707M6.343 17.657l.707.707m0-11.314l-.707.707m11.314 11.314l-.707.707M12 7a5 5 0 100 10 5 5 0 000-10z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
+              </button>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <nav className="hidden md:flex items-center gap-4 text-sm font-medium opacity-70">
-              <span>Research</span>
-              <span>Library</span>
-              <span>Analysis</span>
-            </nav>
-            <button 
-              onClick={toggleTheme}
-              className={`p-2 rounded-full transition-colors ${isDark ? "bg-slate-800 hover:bg-slate-700 text-yellow-400" : "bg-slate-200 hover:bg-slate-300 text-slate-600"}`}
-              title="Toggle Theme"
-            >
-              {isDark ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 18v1m9-9h1M3 12h1m15.364-6.364l.707.707M6.343 17.657l.707.707m0-11.314l-.707.707m11.314 11.314l-.707.707M12 7a5 5 0 100 10 5 5 0 000-10z" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
-            </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 lg:py-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 h-auto lg:h-[calc(100vh-80px)] overflow-y-auto lg:overflow-hidden">
-        {/* Left Sidebar: Upload and Materials - Sticky */}
-        <div className="lg:col-span-4 space-y-8 overflow-y-auto pr-2 custom-scrollbar">
-          <section className={`p-6 rounded-2xl border transition-all ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
-            <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              Upload Materials
-            </h2>
-            <form onSubmit={handleUpload} className="space-y-6">
-              <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer group
-                ${isDark ? "border-slate-700 hover:border-blue-500 hover:bg-blue-500/5" : "border-slate-200 hover:border-blue-400 hover:bg-blue-50"}`}>
-                <input
-                  type="file"
-                  accept=".pdf"
-                  multiple
-                  onChange={(e) => {
-                    const selectedFiles = Array.from(e.target.files || []);
-                    setFiles(selectedFiles);
-                  }}
-                  className="hidden"
-                  id="file-upload"
-                />
-                <label htmlFor="file-upload" className="cursor-pointer space-y-2 block">
-                  <div className="text-3xl mb-2">📄</div>
-                  {files.length > 0 ? (
-                    <div className="space-y-1">
-                      <span className="text-blue-500 font-semibold block">{files.length} files selected</span>
-                      <span className="text-xs opacity-50 block truncate max-w-xs mx-auto">
-                        {files.map(f => f.name).join(", ")}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <span className="font-medium block">Click to select PDFs</span>
-                      <span className="text-xs opacity-50 block">Upload multiple files at once</span>
-                    </div>
-                  )}
-                </label>
-              </div>
-              <button
-                type="submit"
-                disabled={files.length === 0 || uploading}
-                className={`w-full py-3 rounded-xl font-bold transition-all transform active:scale-95 shadow-lg
-                  ${files.length > 0 && !uploading 
-                    ? "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20" 
-                    : "bg-slate-800 text-slate-500 cursor-not-allowed"}`}
-              >
-                {uploading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Uploading...
-                  </span>
-                ) : (
-                  "Upload Documents"
-                )}
-              </button>
-            </form>
-          </section>
-
-          <section className={`p-6 rounded-2xl border transition-all
-            ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                My Library
-              </h2>
-              {materials.length > 0 && (
-                <button 
-                  onClick={clearMaterials}
-                  className="text-[10px] uppercase tracking-wider font-bold text-red-500 hover:text-red-400 transition-colors"
-                >
-                  Clear All
-                </button>
-              )}
-            </div>
-            {materials.length === 0 ? (
-              <p className="text-sm opacity-50 text-center py-4 italic">No materials yet.</p>
-            ) : (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                {materials.map((m, i) => (
-                  <div 
-                    key={i} 
-                    className={`group flex items-center justify-between p-3 rounded-xl border transition-all
-                      ${isDark ? "bg-slate-800/50 border-slate-700/50 hover:border-slate-600" : "bg-slate-50 border-slate-200 hover:border-slate-300"}`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-900' : 'bg-white shadow-sm'}`}>
-                    <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
+      <main className="relative z-10 max-w-7xl mx-auto px-4 pt-32 pb-10 grid grid-cols-1 lg:grid-cols-12 gap-8 h-screen overflow-hidden">
+        {/* Left Sidebar: Vault and Library */}
+        <div className="lg:col-span-3 space-y-8 overflow-y-auto pr-2 custom-scrollbar pb-32 no-scrollbar">
+          <div className={`p-2 rounded-[3rem] border backdrop-blur-3xl transition-all duration-700
+            ${isDark ? "bg-slate-900/20 border-slate-800/50" : "bg-white/20 border-slate-200/50"}`}>
+            
+            <section className={`p-6 rounded-[2.5rem] transition-all duration-500 hover:scale-[1.01] active:scale-[0.99] group
+              ${isDark ? "bg-slate-900/40 hover:bg-slate-900/60" : "bg-white/40 hover:bg-white/60 shadow-xl shadow-slate-200/20"}`}>
+              <div className="flex items-center gap-3 mb-6 opacity-40 group-hover:opacity-100 transition-opacity">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
                 </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-medium truncate">{m.filename}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-1.5 w-1.5 rounded-full bg-green-500"></span>
-                    <span className="text-[10px] opacity-40 font-bold uppercase tracking-tighter">Processed</span>
-                  </div>
-                </div>
-            </div>
-                    <button 
-                      onClick={() => deleteMaterial(m.filename)}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-500 hover:text-red-500 hover:bg-red-500/10 transition-all"
-                      title="Delete material"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
+                <h2 className="text-[10px] font-black uppercase tracking-[0.3em]">Vault</h2>
               </div>
-            )}
-            {materials.length > 0 && (
-              <div className="mt-6 space-y-4">
-                <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                  <label className="text-[10px] font-black uppercase tracking-widest opacity-50 block mb-2">
-                    Items to generate
+              <form onSubmit={handleUpload} className="space-y-4">
+                <div className={`border-2 border-dashed rounded-[2rem] p-6 text-center transition-all cursor-pointer group/upload
+                  ${isDark ? "border-slate-800/50 hover:border-blue-500/50 hover:bg-blue-500/5" : "border-slate-200 hover:border-blue-400 hover:bg-blue-50"}`}>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    multiple
+                    onChange={(e) => {
+                      const selectedFiles = Array.from(e.target.files || []);
+                      setFiles(selectedFiles);
+                    }}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label htmlFor="file-upload" className="cursor-pointer space-y-3 block">
+                    <div className="text-3xl grayscale group-hover/upload:grayscale-0 transition-all transform group-hover/upload:scale-110 duration-500">☁️</div>
+                    {files.length > 0 ? (
+                      <div className="space-y-1">
+                        <span className="text-blue-500 text-[10px] font-black uppercase tracking-widest block">{files.length} Files</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] block opacity-30 group-hover/upload:opacity-100 transition-opacity">Import</span>
+                      </div>
+                    )}
                   </label>
-                  <div className="flex items-center gap-3">
-                    <input 
-                      type="range" 
-                      min="1" 
-                      max="10" 
-                      value={itemCount} 
-                      onChange={(e) => setItemCount(parseInt(e.target.value))}
-                      className="flex-grow h-1.5 bg-blue-600/20 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                    />
-                    <span className="text-sm font-bold w-4 text-center">{itemCount}</span>
-                  </div>
                 </div>
+                <button
+                  type="submit"
+                  disabled={files.length === 0 || uploading}
+                  className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] transition-all transform active:scale-95 shadow-2xl
+                    ${files.length > 0 && !uploading 
+                      ? "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20" 
+                      : "bg-slate-800/20 text-slate-600 cursor-not-allowed"}`}
+                >
+                  {uploading ? "Processing..." : "Sync"}
+                </button>
+              </form>
+            </section>
 
-                <div className="space-y-3">
-                  <button
-                    onClick={handleAnalyze}
-                  disabled={loading || uploading}
-                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all border-2
-                    ${isDark 
-                      ? "border-purple-500/30 text-purple-400 hover:bg-purple-500/10" 
-                      : "border-purple-200 text-purple-600 hover:bg-purple-50"}`}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Analyze Connections
-                </button>
-                <button
-                  onClick={handleGenerateQuiz}
-                  disabled={loading || uploading || quizLoading}
-                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all border-2
-                    ${isDark 
-                      ? "border-amber-500/30 text-amber-400 hover:bg-amber-500/10" 
-                      : "border-amber-200 text-amber-600 hover:bg-amber-50"}`}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  {quizLoading ? "Generating..." : "Practice Quiz"}
-                </button>
-                <button
-                  onClick={handleGenerateFlashcards}
-                  disabled={loading || uploading || flashcardsLoading}
-                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all border-2
-                    ${isDark 
-                      ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10" 
-                      : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"}`}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  {flashcardsLoading ? "Generating..." : "Study Flashcards"}
-                </button>
+            <div className="h-px w-2/3 mx-auto my-4 bg-slate-800/20" />
+
+            <section className={`p-6 rounded-[2.5rem] transition-all duration-500 hover:scale-[1.01] active:scale-[0.99] group
+              ${isDark ? "bg-slate-900/40 hover:bg-slate-900/60" : "bg-white/40 hover:bg-white/60 shadow-xl shadow-slate-200/20"}`}>
+              <div className="flex items-center justify-between mb-6 opacity-40 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <h2 className="text-[10px] font-black uppercase tracking-[0.3em]">Library</h2>
+                </div>
               </div>
-            </div>
-            )}
-          </section>
-          {concepts.length > 0 && (
-            <section className={`p-6 rounded-2xl border transition-all animate-in fade-in slide-in-from-left-4
-              ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-                Key Concepts
-              </h2>
-              {conceptsLoading ? (
-                <div className="flex flex-wrap gap-2 animate-pulse">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className={`h-7 w-20 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} />
-                  ))}
+              {materials.length === 0 ? (
+                <div className="text-center py-6">
+                  <div className="text-2xl mb-2 opacity-10">📚</div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-20">No materials</p>
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-2 overflow-visible">
-                  {concepts.map((c, i) => (
+                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
+                  {materials.map((m, i) => (
                     <div 
                       key={i} 
-                      className={`group relative px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-help
-                        ${isDark 
-                          ? "bg-slate-800 border-slate-700 text-slate-300 hover:border-amber-500/50 hover:bg-amber-500/5" 
-                          : "bg-slate-50 border-slate-200 text-slate-600 hover:border-amber-400 hover:bg-amber-50"}`}
+                      className={`group/item flex items-center justify-between p-3 rounded-2xl border transition-all duration-300
+                        ${isDark ? "bg-slate-800/20 border-slate-700/30 hover:bg-slate-800/40 hover:border-slate-600" : "bg-slate-50 border-slate-200 hover:border-slate-300"}`}
                     >
-                      {c.term}
-                      <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 rounded-xl shadow-xl border text-[11px] leading-relaxed z-20 opacity-0 group-hover:opacity-100 pointer-events-none transition-all
-                        ${isDark ? "bg-slate-800 border-slate-700 text-slate-200" : "bg-white border-slate-200 text-slate-600"}`}>
-                        <div className="font-bold mb-1 text-amber-500">{c.term}</div>
-                        {c.definition}
-                        <div className="mt-2 flex items-center gap-1 opacity-50">
-                          <span className="font-bold">Importance:</span>
-                          <div className="flex gap-0.5">
-                            {[...Array(5)].map((_, star) => (
-                              <div key={star} className={`w-1.5 h-1.5 rounded-full ${star < Math.ceil(c.importance/2) ? 'bg-amber-500' : 'bg-slate-600'}`} />
-                            ))}
-                          </div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`p-2 rounded-xl ${isDark ? 'bg-slate-900 border border-slate-800' : 'bg-white shadow-sm'}`}>
+                          <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[10px] font-bold truncate opacity-80 group-hover/item:opacity-100 transition-opacity">{m.filename}</span>
+                          <span className="text-[7px] font-black uppercase tracking-tighter opacity-30">PDF</span>
                         </div>
                       </div>
+                      <button 
+                        onClick={() => deleteMaterial(m.filename)}
+                        className="opacity-0 group-hover/item:opacity-100 p-1.5 rounded-lg hover:bg-rose-500/10 hover:text-rose-500 transition-all"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
             </section>
-          )}
+          </div>
         </div>
 
         {/* Main: Query Interface - ChatGPT Style */}
-        <div className="lg:col-span-8 flex flex-col h-full overflow-hidden">
-          <section className={`rounded-3xl border flex flex-col flex-grow overflow-hidden transition-all
-            ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200 shadow-xl shadow-slate-200/50"}`}>
+        <div className="lg:col-span-9 flex flex-col h-full overflow-hidden pb-24">
+          <section className={`rounded-[2.5rem] border flex flex-col flex-grow overflow-hidden transition-all duration-500
+            ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200 shadow-2xl shadow-slate-200/50"}`}>
             
             <div className={`p-6 border-b flex justify-between items-center ${isDark ? "border-slate-800" : "border-slate-100"}`}>
-              <h2 className="text-xl font-bold flex items-center gap-3">
-                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                Research Assistant
+              <h2 className="text-xl font-black tracking-tight flex items-center gap-3">
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse-aura"></span>
+                Assistant
               </h2>
               <div className="flex items-center gap-4">
-                <div className={`flex p-1 rounded-xl ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}>
+                <div className={`flex p-1.5 rounded-2xl relative ${isDark ? 'bg-slate-950/80' : 'bg-slate-100'}`}>
+                  {/* Sliding Background */}
+                  <div 
+                    className={`absolute top-1.5 bottom-1.5 transition-all duration-300 ease-out rounded-xl shadow-sm
+                      ${activeTab === 'research' ? 'left-1.5 w-[calc(50%-1.5px-0.375rem)] bg-blue-600' : 'left-[calc(50%+0.375rem-1.5px)] w-[calc(50%-1.5px-0.375rem)] bg-purple-600'}`}
+                  />
                   <button 
                     onClick={() => setActiveTab('research')}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all
-                      ${activeTab === 'research' 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
-                        : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
+                    className={`relative z-10 px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300
+                      ${activeTab === 'research' ? 'text-white' : (isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600')}`}
                   >
                     Research
                   </button>
                   <button 
                     onClick={() => setActiveTab('analysis')}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all
-                      ${activeTab === 'analysis' 
-                        ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/20' 
-                        : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
+                    className={`relative z-10 px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300
+                      ${activeTab === 'analysis' ? 'text-white' : (isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600')}`}
                   >
                     Analysis
                   </button>
                 </div>
-                {chatHistory.length > 0 && activeTab === 'research' && (
-                  <button 
-                    onClick={() => setChatHistory([])}
-                    className="text-xs opacity-50 hover:opacity-100 transition-opacity"
-                  >
-                    Clear Chat
-                  </button>
-                )}
               </div>
             </div>
             
@@ -750,7 +664,7 @@ export default function Home() {
                         )}
 
                         {msg.flashcards && (
-                          <div className="mt-6 flex flex-wrap gap-4 justify-center">
+                          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 justify-items-center pb-4">
                             {msg.flashcards.map((fc, fci) => (
                               <div 
                                 key={fci}
@@ -758,21 +672,32 @@ export default function Home() {
                                   const target = e.currentTarget;
                                   target.classList.toggle('flashcard-flipped');
                                 }}
-                                className="group w-64 h-40 [perspective:1000px] cursor-pointer"
+                                className="group w-full max-w-[320px] h-56 [perspective:1000px] cursor-pointer"
                               >
-                                <div className="flashcard-inner relative w-full h-full shadow-xl rounded-2xl">
+                                <div className="flashcard-inner relative w-full h-full transition-all duration-700 preserve-3d">
                                   {/* Front */}
-                                  <div className={`flashcard-front absolute inset-0 w-full h-full p-6 flex flex-col items-center justify-center text-center rounded-2xl border-2
-                                    ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 mb-2">Question</span>
-                                    <p className="text-xs font-bold leading-relaxed">{fc.front}</p>
-                                    <div className="mt-4 text-[8px] opacity-40 uppercase tracking-tighter">Click to flip</div>
+                                  <div className={`flashcard-front absolute inset-0 w-full h-full p-8 flex flex-col items-center justify-center text-center rounded-[2.5rem] border-2 backface-hidden shadow-xl
+                                    ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/50'}`}>
+                                    <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500/50">Question</span>
+                                    </div>
+                                    <p className="text-sm font-bold leading-relaxed opacity-90">{fc.front}</p>
+                                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 opacity-20 group-hover:opacity-40 transition-opacity">
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                      </svg>
+                                      <span className="text-[9px] font-black uppercase tracking-widest">Flip</span>
+                                    </div>
                                   </div>
                                   {/* Back */}
-                                  <div className={`flashcard-back absolute inset-0 w-full h-full p-6 flex flex-col items-center justify-center text-center rounded-2xl border-2
-                                    ${isDark ? 'bg-amber-900/20 border-amber-500/50' : 'bg-amber-50 border-amber-200'}`}>
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 mb-2">Answer</span>
-                                    <p className="text-xs leading-relaxed">{fc.back}</p>
+                                  <div className={`flashcard-back absolute inset-0 w-full h-full p-8 flex flex-col items-center justify-center text-center rounded-[2.5rem] border-2 backface-hidden shadow-2xl
+                                    ${isDark ? 'bg-blue-600 border-blue-500 shadow-blue-900/20' : 'bg-blue-600 border-blue-500 shadow-blue-200'}`}>
+                                    <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-blue-100" />
+                                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-100/50">Answer</span>
+                                    </div>
+                                    <p className="text-sm font-bold leading-relaxed text-white">{fc.back}</p>
                                   </div>
                                 </div>
                               </div>
@@ -1067,7 +992,92 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className={`py-8 text-center border-t transition-colors ${isDark ? "bg-slate-950 border-slate-900" : "bg-white border-slate-100"}`}>
+      {/* MacOS-style Action Dock */}
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 hidden lg:block">
+        <div className={`flex items-center gap-2 p-2 rounded-[2.5rem] border shadow-2xl backdrop-blur-3xl transition-all duration-500 hover:scale-[1.02]
+          ${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white/60 border-slate-200/50'}`}>
+          
+          <button 
+            onClick={handleAnalyze}
+            disabled={materials.length === 0 || loading}
+            className={`flex items-center gap-3 px-6 py-3.5 rounded-[1.8rem] transition-all transform active:scale-95 group relative overflow-hidden
+              ${materials.length === 0 || loading ? 'opacity-40 cursor-not-allowed' : 'hover:bg-purple-500/10'}`}
+          >
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110
+              ${isDark ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-50 text-purple-600'}`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Analyze</span>
+              <span className="text-[8px] opacity-40 font-bold uppercase tracking-wider">Deep Insights</span>
+            </div>
+          </button>
+
+          <div className="w-px h-8 bg-slate-700/20 mx-1" />
+
+          <button 
+            onClick={handleGenerateQuiz}
+            disabled={materials.length === 0 || quizLoading}
+            className={`flex items-center gap-3 px-6 py-3.5 rounded-[1.8rem] transition-all transform active:scale-95 group
+              ${materials.length === 0 || quizLoading ? 'opacity-40 cursor-not-allowed' : 'hover:bg-amber-500/10'}`}
+          >
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110
+              ${isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Quiz</span>
+              <span className="text-[8px] opacity-40 font-bold uppercase tracking-wider">Self Test</span>
+            </div>
+          </button>
+
+          <div className="w-px h-8 bg-slate-700/20 mx-1" />
+
+          <button 
+            onClick={handleGenerateFlashcards}
+            disabled={materials.length === 0 || flashcardsLoading}
+            className={`flex items-center gap-3 px-6 py-3.5 rounded-[1.8rem] transition-all transform active:scale-95 group
+              ${materials.length === 0 || flashcardsLoading ? 'opacity-40 cursor-not-allowed' : 'hover:bg-emerald-500/10'}`}
+          >
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110
+              ${isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Study</span>
+              <span className="text-[8px] opacity-40 font-bold uppercase tracking-wider">Flashcards</span>
+            </div>
+          </button>
+
+          <div className="w-px h-8 bg-slate-700/20 mx-1" />
+
+          <div className="flex items-center gap-1 px-2">
+            <button 
+              onClick={toggleTheme}
+              className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 transform hover:scale-110 active:scale-90
+                ${isDark ? "bg-slate-800 text-amber-400 hover:bg-slate-700" : "bg-slate-100 text-blue-600 hover:bg-white hover:shadow-lg"}`}
+            >
+              {isDark ? "☀️" : "🌙"}
+            </button>
+            <button 
+              onClick={clearMaterials}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center text-slate-500 hover:bg-rose-500/10 hover:text-rose-500 transition-all duration-500 transform hover:scale-110 active:scale-90"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <footer className={`py-12 text-center border-t transition-colors pb-32 ${isDark ? "bg-slate-950 border-slate-900" : "bg-white border-slate-100"}`}>
         <p className="text-xs font-bold tracking-widest opacity-20 uppercase">
           ScholarSync AI &copy; 2025 • Research with Confidence
         </p>
