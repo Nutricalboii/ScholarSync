@@ -260,7 +260,9 @@ export default function Home() {
         }]);
       } else {
         const data = await res.json();
-        setError(data.detail || "Analysis failed");
+        const errorMessage = data.detail || "Analysis failed";
+        setError(errorMessage);
+        setChatHistory(prev => [...prev, { role: 'assistant', content: `Sorry, I couldn't perform the analysis: ${errorMessage}` }]);
       }
     } catch (err) {
       setError("Failed to connect to backend");
@@ -298,7 +300,9 @@ export default function Home() {
         }]);
       } else {
         const data = await res.json();
-        setError(data.detail || "Quiz generation failed");
+        const errorMessage = data.detail || "Quiz generation failed";
+        setError(errorMessage);
+        setChatHistory(prev => [...prev, { role: 'assistant', content: `Sorry, I couldn't generate the quiz: ${errorMessage}` }]);
       }
     } catch (err) {
       setError("Failed to connect to backend");

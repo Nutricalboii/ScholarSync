@@ -181,7 +181,7 @@ async def analyze_connections(x_session_id: Optional[str] = Header(None)):
         }}
         """
         
-        search_results = vector_store.query(session_id, "What are the key concepts and main topics in these documents?", n_results=15)
+        search_results = vector_store.query(session_id, "What are the key concepts and main topics in these documents?", n_results=10)
         context = "\n\n---\n\n".join(search_results['documents'][0]) if search_results['documents'] else ""
         
         from utils.gemini_client import get_structured_response
@@ -278,7 +278,7 @@ async def generate_quiz(request: GenerateRequest = GenerateRequest(count=3), x_s
     
     try:
         # Get core content for quiz generation
-        search_results = vector_store.query(session_id, "What are the most important facts, dates, and technical details in these materials?", n_results=15)
+        search_results = vector_store.query(session_id, "What are the most important facts, dates, and technical details in these materials?", n_results=10)
         
         context = ""
         if search_results and search_results['documents'] and search_results['documents'][0]:

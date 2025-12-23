@@ -16,7 +16,7 @@ if API_KEY:
 else:
     print("Warning: GEMINI_API_KEY not found in environment variables.")
 
-def retry_with_backoff(retries=5, initial_delay=5):
+def retry_with_backoff(retries=3, initial_delay=2):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
