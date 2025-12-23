@@ -85,11 +85,13 @@ class Flashcard(BaseModel):
 class FlashcardsResponse(BaseModel):
     flashcards: List[Flashcard]
 
-@app.get("/", methods=["GET", "HEAD"])
 @app.get("/")
-@app.head("/")
 async def root():
     return {"status": "online", "message": "ScholarSync API is running"}
+
+@app.api_route("/", methods=["HEAD"])
+async def root_head():
+    return None
 
 @app.post("/upload")
 async def upload_material(file: UploadFile = File(...), x_session_id: Optional[str] = Header(None)):
