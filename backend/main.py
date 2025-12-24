@@ -12,22 +12,10 @@ import uuid
 app = FastAPI(title="ScholarSync API")
 
 # Enable CORS for frontend integration
-origins = [
-    "https://scholar-sync.vercel.app",
-    "https://scholar-sync-tau.vercel.app",
-    "https://scholar-sync-nutricalboiis-projects.vercel.app",
-    "https://scholarsync-nutricalboii.vercel.app",
-    "https://scholarsync-git-main-nutricalboii.vercel.app",
-    "https://scholarsync-nutricalboii-j6h08l8fd.vercel.app",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
-]
-
+# Using wildcard for maximum reliability during deployment
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
