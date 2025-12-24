@@ -39,11 +39,12 @@ def retry_with_backoff(retries=3, initial_delay=2):
         return wrapper
     return decorator
 
-@retry_with_backoff(retries=5, initial_delay=5)
+@retry_with_backoff(retries=3, initial_delay=2)
 def get_gemini_response(prompt: str, context: str = "") -> str:
     """Generates a response from Gemini using the provided context."""
     print(f"DEBUG: Generating text response for prompt: {prompt[:50]}...")
     if not client:
+        print("ERROR: Gemini API client not configured.")
         return "Error: Gemini API client not configured."
     
     system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
@@ -62,13 +63,16 @@ def get_gemini_response(prompt: str, context: str = "") -> str:
         return response.text
     except Exception as e:
         print(f"DEBUG: API Call Error: {str(e)}")
+        if "404" in str(e):
+            print("ERROR: Model not found. Please check if gemini-2.0-flash is available.")
         raise e
 
-@retry_with_backoff(retries=5, initial_delay=5)
+@retry_with_backoff(retries=3, initial_delay=2)
 def get_structured_response(prompt: str, context: str = "") -> str:
     """Generates a response from Gemini that is expected to be structured (like JSON)."""
     print(f"DEBUG: Generating structured response for prompt: {prompt[:50]}...")
     if not client:
+        print("ERROR: Gemini API client not configured.")
         return "[]"
     
     system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
@@ -81,7 +85,6 @@ def get_structured_response(prompt: str, context: str = "") -> str:
             contents=full_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
-                # Fix: remove mime type if it causes issues, or ensure it's correct
                 response_mime_type='application/json'
             )
         )
@@ -90,7 +93,6 @@ def get_structured_response(prompt: str, context: str = "") -> str:
     except Exception as e:
         print(f"DEBUG: Structured API Call Error: {str(e)}")
         # If JSON mode fails or isn't supported, fall back to standard response
-        # which will also be retried by its own decorator
         print(f"Structured response failed, falling back: {str(e)}")
         return get_gemini_response(prompt, context)
 

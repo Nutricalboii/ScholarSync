@@ -17,6 +17,7 @@ origins = [
     "https://scholar-sync-tau.vercel.app",
     "https://scholar-sync-nutricalboiis-projects.vercel.app",
     "https://scholarsync-nutricalboii.vercel.app",
+    "https://scholarsync-git-main-nutricalboii.vercel.app",
     "http://localhost:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3000",
@@ -96,6 +97,7 @@ async def root_head():
 @app.post("/upload")
 async def upload_material(file: UploadFile = File(...), x_session_id: Optional[str] = Header(None)):
     session_id = x_session_id or "default_user"
+    print(f"DEBUG: Uploading {file.filename} for session: {session_id}")
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
     
@@ -122,6 +124,7 @@ async def upload_material(file: UploadFile = File(...), x_session_id: Optional[s
 @app.post("/query", response_model=QueryResponse)
 async def query_materials(request: QueryRequest, x_session_id: Optional[str] = Header(None)):
     session_id = x_session_id or "default_user"
+    print(f"DEBUG: Querying for session: {session_id} with prompt: {request.prompt[:50]}")
     try:
         # Perform semantic search with session isolation
         search_results = vector_store.query(session_id, request.prompt, n_results=5)
@@ -155,8 +158,13 @@ async def query_materials(request: QueryRequest, x_session_id: Optional[str] = H
 @app.post("/analyze", response_model=AnalysisResponse)
 async def analyze_connections(x_session_id: Optional[str] = Header(None)):
     session_id = x_session_id or "default_user"
+    print(f"DEBUG: Starting analysis for session: {session_id}")
+    
     materials = vector_store.get_all_materials(session_id)
+    print(f"DEBUG: Found {len(materials)} materials for session {session_id}")
+    
     if not materials:
+        print(f"DEBUG: No materials found for session {session_id}. Vector store might be empty or session mismatch.")
         raise HTTPException(status_code=400, detail="No materials uploaded for analysis.")
     
     try:
@@ -208,6 +216,7 @@ async def analyze_connections(x_session_id: Optional[str] = Header(None)):
 @app.post("/concepts", response_model=ConceptsResponse)
 async def extract_concepts(x_session_id: Optional[str] = Header(None)):
     session_id = x_session_id or "default_user"
+    print(f"DEBUG: Extracting concepts for session: {session_id}")
     materials = vector_store.get_all_materials(session_id)
     if not materials:
         raise HTTPException(status_code=400, detail="No materials uploaded.")

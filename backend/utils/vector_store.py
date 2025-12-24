@@ -21,10 +21,18 @@ class VectorStore:
         """Helper to get or create a collection with optimized settings."""
         # Sanitize name: ChromaDB requires 3-63 chars, alphanumeric, starts/ends with alphanumeric
         # It also allows underscores and hyphens.
-        safe_name = name.replace(".", "_").replace(" ", "_")
+        import re
+        # Remove any non-alphanumeric characters except underscore and hyphen
+        safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', name)
+        
         if len(safe_name) < 3: safe_name = f"user_{safe_name}"
         if len(safe_name) > 63: safe_name = safe_name[:63]
         
+        # Ensure it starts and ends with alphanumeric
+        if not safe_name[0].isalnum(): safe_name = 'u' + safe_name[1:]
+        if not safe_name[-1].isalnum(): safe_name = safe_name[:-1] + '1'
+        
+        print(f"DEBUG: Getting collection for '{name}' (sanitized: '{safe_name}')")
         return self.client.get_or_create_collection(
             name=safe_name,
             metadata={
@@ -69,9 +77,12 @@ class VectorStore:
 
     def get_all_materials(self, collection_name: str):
         """Gets unique filenames from the collection."""
+        print(f"DEBUG: Attempting to get materials for collection: {collection_name}")
         collection = self._get_collection(collection_name)
         results = collection.get(include=["metadatas"])
+        
         if not results or not results["metadatas"]:
+            print(f"DEBUG: No metadatas found in collection for '{collection_name}' (Collection may be empty)")
             return []
         
         filenames = set()
@@ -79,7 +90,9 @@ class VectorStore:
             if meta and "filename" in meta:
                 filenames.add(meta["filename"])
         
-        return [{"filename": name} for name in filenames]
+        file_list = list(filenames)
+        print(f"DEBUG: Found {len(file_list)} unique files in collection '{collection_name}': {file_list}")
+        return [{"filename": name} for name in file_list]
 
     def clear_all(self, collection_name: str):
         """Clears all documents from the collection."""

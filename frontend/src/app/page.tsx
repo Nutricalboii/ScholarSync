@@ -22,6 +22,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
   const [conceptsLoading, setConceptsLoading] = useState(false);
   const [materials, setMaterials] = useState<{ filename: string }[]>([]);
   const [concepts, setConcepts] = useState<{ term: string, definition: string, importance: number }[]>([]);
@@ -54,51 +55,52 @@ export default function Home() {
     }
   }, [chatHistory, loading]);
 
-  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000").replace(/\/$/, "");
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+
+  const checkBackend = async () => {
+    setBackendStatus('checking');
+    const startTime = Date.now();
+    
+    try {
+      console.log(`Checking backend connection to: ${backendUrl}`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const res = await fetch(`${backendUrl}/`, { 
+        headers: { 
+          "bypass-tunnel-reminder": "true",
+          "Accept": "application/json"
+        },
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (res.ok) {
+        console.log(`✅ Backend online! (Response time: ${Date.now() - startTime}ms)`);
+        setBackendStatus('online');
+        setError(""); // Clear any connection errors
+      } else {
+        console.error(`❌ Backend error: ${res.status} ${res.statusText}`);
+        setBackendStatus('offline');
+      }
+    } catch (err: any) {
+      const duration = Date.now() - startTime;
+      if (err.name === 'AbortError') {
+        console.error(`❌ Connection timed out after ${duration}ms. Server might be cold-starting.`);
+      } else {
+        console.error(`❌ Connection failed to ${backendUrl} after ${duration}ms:`, err.message);
+      }
+      setBackendStatus('offline');
+      setError(`Cannot reach backend at ${backendUrl}. Make sure your Python server is running on port 8000.`);
+    }
+  };
 
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_BACKEND_URL) {
-      console.warn("⚠️ NEXT_PUBLIC_BACKEND_URL is not set. Defaulting to localhost:8000");
+      console.warn("⚠️ NEXT_PUBLIC_BACKEND_URL is not set. Defaulting to 127.0.0.1:8000");
     }
-    
-    const checkBackend = async () => {
-      setBackendStatus('checking');
-      const startTime = Date.now();
-      
-      try {
-        console.log(`Checking backend connection to: ${backendUrl}`);
-        
-        // Use a longer timeout for the initial wake-up call (Render free tier can take 30s+)
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 45000);
-
-        const res = await fetch(`${backendUrl}/`, { 
-          headers: { 
-            "bypass-tunnel-reminder": "true",
-            "Accept": "application/json"
-          },
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (res.ok) {
-          console.log(`✅ Backend online! (Response time: ${Date.now() - startTime}ms)`);
-          setBackendStatus('online');
-        } else {
-          console.error(`❌ Backend error: ${res.status} ${res.statusText}`);
-          setBackendStatus('offline');
-        }
-      } catch (err: any) {
-        const duration = Date.now() - startTime;
-        if (err.name === 'AbortError') {
-          console.error(`❌ Connection timed out after ${duration}ms. Server might be cold-starting.`);
-        } else {
-          console.error(`❌ Connection failed to ${backendUrl} after ${duration}ms:`, err.message);
-        }
-        setBackendStatus('offline');
-      }
-    };
     
     checkBackend();
     fetchMaterials();
@@ -111,19 +113,29 @@ export default function Home() {
   }, [materials]);
 
   const fetchMaterials = async () => {
+    setMaterialsLoading(true);
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const res = await fetch(`${backendUrl}/materials`, {
         headers: { 
           "bypass-tunnel-reminder": "true",
           "X-Session-ID": sessionId
-        }
+        },
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
+      
       if (res.ok) {
         const data = await res.json();
+        console.log("DEBUG: Fetched materials:", data);
         setMaterials(data);
       }
     } catch (err) {
       console.error("Failed to fetch materials", err);
+    } finally {
+      setMaterialsLoading(false);
     }
   };
 
@@ -153,6 +165,11 @@ export default function Home() {
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (files.length === 0) return;
+    
+    if (backendStatus !== 'online') {
+      setError("Backend is offline. Please start your Python server or click 'Retry' above.");
+      return;
+    }
 
     setUploading(true);
     setError("");
@@ -202,6 +219,9 @@ export default function Home() {
     setChatHistory(prev => [...prev, { role: 'user', content: searchTerms }]);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout for AI response
+
       const res = await fetch(`${backendUrl}/query`, {
         method: "POST",
         headers: { 
@@ -210,7 +230,10 @@ export default function Home() {
           "X-Session-ID": sessionId
         },
         body: JSON.stringify({ prompt: searchTerms }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = await res.json();
@@ -223,8 +246,9 @@ export default function Home() {
         const data = await res.json();
         setError(data.detail || "Query failed");
       }
-    } catch (err) {
-      setError("Connection Error: Could not reach backend. Please check if the server is running and CORS is configured.");
+    } catch (err: any) {
+      const msg = err.name === 'AbortError' ? "Request timed out (45s). Please try again." : "Connection Error: Could not reach backend.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -337,6 +361,9 @@ export default function Home() {
     setChatHistory(prev => [...prev, { role: 'user', content: "Generate study flashcards." }]);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
       const res = await fetch(`${backendUrl}/flashcards`, {
         method: "POST",
         headers: { 
@@ -344,8 +371,11 @@ export default function Home() {
           "bypass-tunnel-reminder": "true",
           "X-Session-ID": sessionId
         },
-        body: JSON.stringify({ count: itemCount })
+        body: JSON.stringify({ count: itemCount }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = await res.json();
@@ -358,8 +388,9 @@ export default function Home() {
         const data = await res.json();
         setError(data.detail || "Flashcard generation failed");
       }
-    } catch (err) {
-      setError("Failed to connect to backend");
+    } catch (err: any) {
+      const msg = err.name === 'AbortError' ? "Request timed out (60s). Please try again." : "Failed to connect to backend";
+      setError(msg);
     } finally {
       setFlashcardsLoading(false);
     }
@@ -432,6 +463,14 @@ export default function Home() {
                     {backendStatus === 'online' ? 'Live' : 
                      backendStatus === 'checking' ? 'Wait' : 'Offline'}
                   </span>
+                  {backendStatus === 'offline' && (
+                    <button 
+                      onClick={() => checkBackend()}
+                      className="text-[7px] font-black text-blue-500 uppercase tracking-tighter hover:underline ml-1"
+                    >
+                      Retry
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -548,7 +587,12 @@ export default function Home() {
                   <h2 className="text-[10px] font-black uppercase tracking-[0.3em]">Library</h2>
                 </div>
               </div>
-              {materials.length === 0 ? (
+              {materialsLoading ? (
+                <div className="text-center py-6">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-20">Syncing...</p>
+                </div>
+              ) : materials.length === 0 ? (
                 <div className="text-center py-6">
                   <div className="text-2xl mb-2 opacity-10">📚</div>
                   <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-20">No materials</p>
