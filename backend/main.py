@@ -181,14 +181,6 @@ async def analyze_connections(x_session_id: Optional[str] = Header(None)):
         search_results = vector_store.query(session_id, "What are the key concepts and main topics in these documents?", n_results=10)
         context = "\n\n---\n\n".join(search_results['documents'][0]) if search_results['documents'] and search_results['documents'][0] else ""
         
-        if not context.strip():
-            print(f"DEBUG: Empty context for analysis in session {session_id}")
-            return AnalysisResponse(
-                analysis="I couldn't find enough text in your uploaded materials to perform a deep analysis. Please ensure your PDFs contain selectable text.",
-                learning_path=["Upload PDFs with clear text", "Try querying specific terms instead"],
-                connections=[]
-            )
-            
         from utils.gemini_client import get_structured_response
         raw_response = get_structured_response(analysis_prompt, context)
         

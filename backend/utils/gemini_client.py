@@ -12,7 +12,8 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 client = None
 
 if API_KEY:
-    client = genai.Client(api_key=API_KEY)
+    # Force stable v1 API version to avoid v1beta model availability issues
+    client = genai.Client(api_key=API_KEY, http_options={'api_version': 'v1'})
 else:
     print("Warning: GEMINI_API_KEY not found in environment variables.")
 
