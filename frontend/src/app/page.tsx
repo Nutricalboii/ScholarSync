@@ -55,7 +55,7 @@ export default function Home() {
     }
   }, [chatHistory, loading]);
 
-  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+  const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000").replace(/[/\.]+$/, "");
 
   const checkBackend = async () => {
     setBackendStatus('checking');
@@ -65,7 +65,7 @@ export default function Home() {
       console.log(`Checking backend connection to: ${backendUrl}`);
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // Increased to 60s for Render cold start
 
       const res = await fetch(`${backendUrl}/`, { 
         headers: { 
