@@ -179,8 +179,16 @@ async def analyze_connections(x_session_id: Optional[str] = Header(None)):
         """
         
         search_results = vector_store.query(session_id, "What are the key concepts and main topics in these documents?", n_results=10)
-        context = "\n\n---\n\n".join(search_results['documents'][0]) if search_results['documents'] else ""
+        context = "\n\n---\n\n".join(search_results['documents'][0]) if search_results['documents'] and search_results['documents'][0] else ""
         
+        if not context.strip():
+            print(f"DEBUG: Empty context for analysis in session {session_id}")
+            return AnalysisResponse(
+                analysis="I couldn't find enough text in your uploaded materials to perform a deep analysis. Please ensure your PDFs contain selectable text.",
+                learning_path=["Upload PDFs with clear text", "Try querying specific terms instead"],
+                connections=[]
+            )
+            
         from utils.gemini_client import get_structured_response
         raw_response = get_structured_response(analysis_prompt, context)
         
@@ -282,6 +290,9 @@ async def generate_quiz(request: GenerateRequest = GenerateRequest(count=3), x_s
         if search_results and search_results['documents'] and search_results['documents'][0]:
             context = "\n\n---\n\n".join(search_results['documents'][0])
         
+        if not context.strip():
+            return QuizResponse(questions=[])
+            
         prompt = f"""
         Generate {request.count} high-quality multiple-choice questions based on the provided context.
         Each question must have:
@@ -325,8 +336,11 @@ async def generate_flashcards(request: GenerateRequest = GenerateRequest(count=5
     
     try:
         search_results = vector_store.query(session_id, "What are the key definitions, formulas, and core concepts in these materials?", n_results=15)
-        context = "\n\n---\n\n".join(search_results['documents'][0]) if search_results['documents'] else ""
+        context = "\n\n---\n\n".join(search_results['documents'][0]) if search_results['documents'] and search_results['documents'][0] else ""
         
+        if not context.strip():
+            return FlashcardsResponse(flashcards=[])
+            
         prompt = f"""
         Generate {request.count} high-quality flashcards based on the provided context.
         Each flashcard must have a 'front' (question/term) and a 'back' (answer/definition).

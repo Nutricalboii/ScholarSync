@@ -6,7 +6,11 @@ def extract_text_from_pdf(file_content: bytes) -> str:
     pdf_reader = pypdf.PdfReader(io.BytesIO(file_content))
     text = ""
     for page in pdf_reader.pages:
-        text += page.extract_text() + "\n"
+        text += page.extract_text() or "" + "\n"
+    
+    if not text.strip():
+        print(f"WARNING: No text could be extracted from the PDF.")
+        
     return text
 
 def chunk_text(text: str, chunk_size: int = 1000, chunk_overlap: int = 200) -> list[str]:

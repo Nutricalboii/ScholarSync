@@ -53,7 +53,7 @@ def get_gemini_response(prompt: str, context: str = "") -> str:
     
     try:
         response = client.models.generate_content(
-            model='gemini-1.5-flash-latest',
+            model='gemini-1.5-flash',
             contents=full_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction
@@ -81,7 +81,7 @@ def get_structured_response(prompt: str, context: str = "") -> str:
     
     try:
         response = client.models.generate_content(
-            model='gemini-1.5-flash-latest',
+            model='gemini-1.5-flash',
             contents=full_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
