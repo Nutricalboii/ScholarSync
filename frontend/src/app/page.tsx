@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 export default function Home() {
   const [sessionId] = useState(() => {
@@ -46,7 +47,21 @@ export default function Home() {
   const [isDark, setIsDark] = useState(true);
   const [itemCount, setItemCount] = useState(5);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
   const [showSidebar, setShowSidebar] = useState(false);
+
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => setShowToast(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
+
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setShowToast(true);
+  };
 
   useEffect(() => {
     const container = document.getElementById('chat-container');
@@ -93,7 +108,7 @@ export default function Home() {
         console.error(`❌ Connection failed to ${backendUrl} after ${duration}ms:`, err.message);
       }
       setBackendStatus('offline');
-      setError(`Cannot reach backend at ${backendUrl}. Make sure your Python server is running on port 8000.`);
+      setError("Cannot reach backend. Check your internet connection or server status.");
     }
   };
 
@@ -244,7 +259,11 @@ export default function Home() {
         }]);
       } else {
         const data = await res.json();
-        setError(data.detail || "Query failed");
+        if (res.status === 429) {
+          triggerToast("AI is taking a breather! Please wait a moment before asking again.");
+        } else {
+          setError(data.detail || "Query failed");
+        }
       }
     } catch (err: any) {
       const msg = err.name === 'AbortError' ? "Request timed out (45s). Please try again." : "Connection Error: Could not reach backend.";
@@ -440,61 +459,57 @@ export default function Home() {
       {/* Mesh Gradient Background */}
       <div className="fixed inset-0 z-0 mesh-gradient pointer-events-none opacity-50" />
 
+      {showToast && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className={`px-6 py-3 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-center gap-3
+            ${isDark ? "bg-black/60 border-white/20 text-white" : "bg-white/60 border-black/10 text-slate-900"}`}>
+            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="text-xs font-bold tracking-tight">{toastMessage}</span>
+          </div>
+        </div>
+      )}
+
       <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-5xl px-4">
-        <div className={`rounded-2xl border shadow-xl backdrop-blur-2xl transition-all duration-500 ${isDark ? "bg-slate-900/40 border-slate-800/50" : "bg-white/40 border-white/50"}`}>
-          <div className="px-4 py-2 flex justify-between items-center">
+        <div className={`rounded-3xl border shadow-2xl backdrop-blur-2xl transition-all duration-500 ${isDark ? "bg-black/40 border-white/10" : "bg-white/40 border-black/5"}`}>
+          <div className="px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000" />
-                <div className="relative w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center shadow-2xl border border-slate-800 transform transition-transform group-hover:scale-105 active:scale-95">
-                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.246 18.477 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
+              <div className={`p-2.5 rounded-2xl ${isDark ? "bg-white/10" : "bg-black/5"}`}>
+                <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18 18.246 18.477 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
               </div>
               <div className="flex flex-col">
-                <h1 className="text-base font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-500">ScholarSync</h1>
+                <h1 className={`text-lg font-bold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                  ScholarSync <span className="text-indigo-500">AI</span>
+                </h1>
                 <div className="flex items-center gap-1.5">
-                  <div className={`w-1 h-1 rounded-full ${
-                    backendStatus === 'online' ? 'bg-green-500' : 
-                    backendStatus === 'checking' ? 'bg-amber-500 animate-pulse' : 'bg-red-500'
-                  }`} />
-                  <span className="text-[8px] font-black uppercase tracking-[0.1em] opacity-40">
-                    {backendStatus === 'online' ? 'Live' : 
-                     backendStatus === 'checking' ? 'Wait' : 'Offline'}
+                  <div className={`w-1.5 h-1.5 rounded-full ${backendStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-white/40" : "text-slate-400"}`}>
+                    {backendStatus === 'online' ? 'Engine Live' : 'Engine Offline'}
                   </span>
-                  {backendStatus === 'offline' && (
-                    <button 
-                      onClick={() => checkBackend()}
-                      className="text-[7px] font-black text-blue-500 uppercase tracking-tighter hover:underline ml-1"
-                    >
-                      Retry
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setShowSidebar(!showSidebar)}
-                className={`lg:hidden w-8 h-8 rounded-xl flex items-center justify-center transition-all border ${isDark ? "bg-slate-800 border-slate-700 text-slate-400" : "bg-white border-slate-200 text-slate-600 shadow-sm"}`}
+                className={`lg:hidden p-2.5 rounded-2xl transition-all ${isDark ? "bg-white/10 text-white" : "bg-black/5 text-slate-600"}`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-              <button 
+              <button
                 onClick={toggleTheme}
-                className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 border ${isDark ? "bg-slate-800 border-slate-700 text-yellow-400" : "bg-white border-slate-200 text-slate-600 shadow-sm"}`}
-                title="Toggle Theme"
+                className={`p-2.5 rounded-2xl transition-all duration-300 ${isDark ? "bg-white/10 hover:bg-white/20 text-yellow-400" : "bg-black/5 hover:bg-black/10 text-slate-600"}`}
               >
                 {isDark ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 18v1m9-9h1M3 12h1m15.364-6.364l.707.707M6.343 17.657l.707.707m0-11.314l-.707.707m11.314 11.314l-.707.707M12 7a5 5 0 100 10 5 5 0 000-10z" />
                   </svg>
                 ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                   </svg>
                 )}
@@ -507,7 +522,7 @@ export default function Home() {
       <main className="relative z-10 max-w-7xl mx-auto px-4 pt-20 pb-10 flex flex-col lg:grid lg:grid-cols-12 gap-6 h-screen overflow-hidden">
         {/* Sidebar: Now collapsible on mobile */}
         <div className={`lg:col-span-3 space-y-4 overflow-y-auto pr-2 custom-scrollbar pb-10 
-          ${showSidebar ? 'fixed inset-0 z-[60] bg-slate-950/90 backdrop-blur-xl p-8 block' : 'hidden lg:block'}`}>
+          ${showSidebar ? 'fixed inset-0 z-[60] bg-black/80 backdrop-blur-2xl p-8 block' : 'hidden lg:block'}`}>
           
           {showSidebar && (
             <button 
@@ -520,11 +535,11 @@ export default function Home() {
             </button>
           )}
 
-          <div className={`p-2 rounded-3xl border backdrop-blur-3xl transition-all duration-700
-            ${isDark ? "bg-slate-900/20 border-slate-800/50" : "bg-white/20 border-slate-200/50"}`}>
+          <div className={`p-2 rounded-[2rem] border backdrop-blur-2xl transition-all duration-700
+            ${isDark ? "bg-black/20 border-white/10" : "bg-white/20 border-black/5"}`}>
             
-            <section className={`p-4 rounded-2xl transition-all duration-500 hover:scale-[1.01] active:scale-[0.99] group
-              ${isDark ? "bg-slate-900/40 hover:bg-slate-900/60" : "bg-white/40 hover:bg-white/60 shadow-xl shadow-slate-200/20"}`}>
+            <section className={`p-4 rounded-3xl transition-all duration-500 hover:scale-[1.01] active:scale-[0.99] group
+              ${isDark ? "bg-white/5 hover:bg-white/10" : "bg-white/40 hover:bg-white/60 shadow-xl shadow-slate-200/20"}`}>
               <div className="flex items-center gap-2 mb-4 opacity-40 group-hover:opacity-100 transition-opacity">
                 <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center">
                   <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -575,8 +590,8 @@ export default function Home() {
 
             <div className="h-px w-2/3 mx-auto my-4 bg-slate-800/20" />
 
-            <section className={`p-6 rounded-[2.5rem] transition-all duration-500 hover:scale-[1.01] active:scale-[0.99] group
-              ${isDark ? "bg-slate-900/40 hover:bg-slate-900/60" : "bg-white/40 hover:bg-white/60 shadow-xl shadow-slate-200/20"}`}>
+            <section className={`p-6 rounded-[2rem] transition-all duration-500 hover:scale-[1.01] active:scale-[0.99] group
+              ${isDark ? "bg-white/5 hover:bg-white/10" : "bg-white/40 hover:bg-white/60 shadow-xl shadow-slate-200/20"}`}>
               <div className="flex items-center justify-between mb-6 opacity-40 group-hover:opacity-100 transition-opacity">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center">
@@ -634,8 +649,8 @@ export default function Home() {
 
         {/* Main: Query Interface - ChatGPT Style */}
         <div className="lg:col-span-9 flex flex-col h-full overflow-hidden pb-20">
-          <section className={`rounded-3xl border flex flex-col flex-grow overflow-hidden transition-all duration-500
-            ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-white border-slate-200 shadow-xl shadow-slate-200/50"}`}>
+          <section className={`rounded-[2rem] border flex flex-col flex-grow overflow-hidden transition-all duration-500 backdrop-blur-2xl
+            ${isDark ? "bg-black/40 border-white/10" : "bg-white border-slate-200 shadow-xl shadow-slate-200/50"}`}>
             
             <div className={`p-4 border-b flex justify-between items-center ${isDark ? "border-slate-800" : "border-slate-100"}`}>
               <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
@@ -767,30 +782,29 @@ export default function Home() {
                               >
                                 <div className="flashcard-inner relative w-full h-full transition-all duration-700" style={{ transformStyle: 'preserve-3d' }}>
                                   {/* Front */}
-                                  <div className={`flashcard-front absolute inset-0 w-full h-full p-8 flex flex-col items-center justify-center text-center rounded-[2.5rem] border-2 shadow-xl
-                                    ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/50'}`}
+                                  <div className={`flashcard-front absolute inset-0 w-full h-full p-8 flex flex-col items-center justify-center text-center rounded-3xl border shadow-xl backdrop-blur-xl
+                                    ${isDark ? 'bg-black/40 border-white/10' : 'bg-white/40 border-black/5'}`}
                                     style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}>
                                     <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
                                       <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
                                       <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500/50">Question</span>
                                     </div>
                                     <div className="text-sm font-bold leading-relaxed opacity-90 max-h-full overflow-y-auto custom-scrollbar">{fc.front}</div>
-                                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 opacity-20 group-hover:opacity-40 transition-opacity">
-                                      <svg className="w-3 h-3 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                      </svg>
-                                      <span className="text-[9px] font-black uppercase tracking-widest">Flip Card</span>
-                                    </div>
                                   </div>
+
                                   {/* Back */}
-                                  <div className={`flashcard-back absolute inset-0 w-full h-full p-8 flex flex-col items-center justify-center text-center rounded-[2.5rem] border-2 shadow-2xl
-                                    ${isDark ? 'bg-indigo-600 border-indigo-500 shadow-indigo-900/40' : 'bg-blue-600 border-blue-500 shadow-blue-200'}`}
-                                    style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                                  <div className={`flashcard-back absolute inset-0 w-full h-full p-8 flex flex-col items-center justify-center text-center rounded-3xl border shadow-xl backdrop-blur-xl
+                                    ${isDark ? 'bg-indigo-950/40 border-white/10' : 'bg-indigo-50/40 border-black/5'}`}
+                                    style={{ 
+                                      backfaceVisibility: 'hidden', 
+                                      WebkitBackfaceVisibility: 'hidden',
+                                      transform: 'rotateY(180deg)'
+                                    }}>
                                     <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
-                                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Answer</span>
+                                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
+                                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-500/50">Answer</span>
                                     </div>
-                                    <div className="text-sm font-bold leading-relaxed text-white max-h-full overflow-y-auto custom-scrollbar">{fc.back}</div>
+                                    <div className="text-sm font-medium leading-relaxed opacity-90 max-h-full overflow-y-auto custom-scrollbar">{fc.back}</div>
                                   </div>
                                 </div>
                               </div>
@@ -809,10 +823,13 @@ export default function Home() {
                                       key={oi}
                                       onClick={() => {
                                         const newHistory = [...chatHistory];
-                                        if (!newHistory[idx].selectedAnswers) {
-                                          newHistory[idx].selectedAnswers = {};
-                                        }
-                                        newHistory[idx].selectedAnswers[qi] = opt;
+                                        newHistory[idx] = {
+                                          ...newHistory[idx],
+                                          selectedAnswers: {
+                                            ...(newHistory[idx].selectedAnswers || {}),
+                                            [qi]: opt
+                                          }
+                                        };
                                         setChatHistory(newHistory);
                                       }}
                                       className={`text-left px-4 py-2.5 rounded-lg text-xs transition-all border
@@ -1243,6 +1260,17 @@ export default function Home() {
         .no-scrollbar {
           -ms-overflow-style: none;  /* IE and Edge */
           scrollbar-width: none;  /* Firefox */
+        }
+        .flashcard-flipped .flashcard-inner {
+          transform: rotateY(180deg);
+        }
+        .flashcard-inner {
+          transform-style: preserve-3d;
+          transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .flashcard-front, .flashcard-back {
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
         }
       `}</style>
     </div>

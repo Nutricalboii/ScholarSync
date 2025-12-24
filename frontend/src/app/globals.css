@@ -56,17 +56,17 @@ body {
     animation: spin 3s linear infinite;
   }
   .mesh-gradient {
-    background: radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
-                radial-gradient(at 0% 100%, rgba(34, 197, 94, 0.15) 0px, transparent 50%);
-    background-size: 200% 200%;
-    animation: mesh-move 15s ease infinite;
+    background: radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.25) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.25) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(236, 72, 153, 0.25) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(34, 197, 94, 0.25) 0px, transparent 50%);
+    background-size: 150% 150%;
+    animation: mesh-move 20s ease-in-out infinite alternate;
   }
   @keyframes mesh-move {
     0% { background-position: 0% 0%; }
-    50% { background-position: 100% 100%; }
-    100% { background-position: 0% 0%; }
+    50% { background-position: 50% 100%; }
+    100% { background-position: 100% 50%; }
   }
   .squircle {
     border-radius: 3rem;
