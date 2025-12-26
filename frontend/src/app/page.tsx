@@ -268,7 +268,7 @@ export default function Home() {
     try {
       console.log("Starting Deep Analysis...");
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s for heavy analysis
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes for heavy analysis
 
       const res = await fetch(`${backendUrl}/analyze`, {
         method: "POST",
@@ -297,7 +297,7 @@ export default function Home() {
       setChatHistory(h => [
         ...h,
         { role: "assistant", content: isTimeout 
-          ? "⏳ **Analysis Timeout:** The engine is taking longer than usual to process your documents. It's likely still working—please wait 30 seconds and try 'Graph' to see if concepts appeared."
+          ? "⏳ **Analysis Timeout:** Your documents are very large, and the AI is still reading them. The process is running in the background—please check the 'Graph' tab in 1-2 minutes to see the results."
           : `❌ **System Error:** Failed to reach engine at \`${backendUrl}\`.` 
         },
       ]);
