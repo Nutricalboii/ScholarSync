@@ -8,7 +8,8 @@ import "katex/dist/katex.min.css";
 
 type Material = { filename: string };
 
-const backendUrl = "https://scholarsync-jh4j.onrender.com";
+// Use local proxy to bypass CORS/SSL issues
+const backendUrl = "/api";
 
 export default function Home() {
   /* ================= SESSION ================= */
@@ -315,7 +316,7 @@ export default function Home() {
           <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
             <span className="text-white font-black">S</span>
           </div>
-          <h1 className="text-xs font-black uppercase tracking-[0.4em] opacity-80">ScholarSync <span className="text-blue-500">v1.0</span></h1>
+          <h1 className="text-xs font-black uppercase tracking-[0.4em] opacity-80">ScholarSync <span className="text-blue-500">v1.1</span></h1>
         </div>
         
         <div className="flex items-center gap-6">
