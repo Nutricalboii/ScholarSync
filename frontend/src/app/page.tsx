@@ -12,7 +12,7 @@ let backendUrl = (
   typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
     ? "http://localhost:10000"
     : (process.env.NEXT_PUBLIC_BACKEND_URL || "https://scholarsync-jh4j.onrender.com")
-).trim().replace(/\/+$/, "");
+).trim().replace(/[.\/]+$/, ""); // 100% strip trailing dots and slashes
 
 // Auto-fix protocol: If we are on HTTPS, force backend to HTTPS (unless localhost)
 if (typeof window !== "undefined" && window.location.protocol === "https:" && !backendUrl.includes("localhost")) {
@@ -235,6 +235,9 @@ export default function Home() {
     setLoading(true);
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s for query
+
       const res = await fetch(`${backendUrl}/query`, {
         method: "POST",
         headers: {
@@ -242,8 +245,10 @@ export default function Home() {
           "X-Session-ID": sessionId,
         },
         body: JSON.stringify({ prompt: currentQuery }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         setChatHistory(h => [
@@ -258,11 +263,16 @@ export default function Home() {
         ]);
       }
     } catch (e: any) {
+      console.error("Query Error:", e);
+      const isTimeout = e.name === 'AbortError';
       setChatHistory(h => [
         ...h,
-        { role: "assistant", content: `❌ **System Error:** Failed to connect to engine at \`${backendUrl}\`. It might be waking up—please try again in a moment.` },
+        { role: "assistant", content: isTimeout 
+          ? "⏳ **Query Timeout:** The engine is taking too long to answer. It might be waking up or processing a large amount of data."
+          : `❌ **System Error:** Failed to connect to engine at \`${backendUrl}\`.` 
+        },
       ]);
-      checkBackend(); // Re-verify status
+      checkBackend(); 
     } finally {
       setLoading(false);
     }
@@ -274,15 +284,22 @@ export default function Home() {
       return;
     }
     
+    if (loading) return; // Prevent double-clicks
     setLoading(true);
-    setActiveTab("research"); // Switch to chat to see the analysis result
+    setActiveTab("research");
 
     try {
+      console.log("Starting Deep Analysis...");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s for heavy analysis
+
       const res = await fetch(`${backendUrl}/analyze`, {
         method: "POST",
         headers: { "X-Session-ID": sessionId },
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         setChatHistory(h => [
@@ -291,18 +308,23 @@ export default function Home() {
         ]);
         fetchConcepts(true);
       } else {
-        const errorData = await res.json().catch(() => ({ detail: "Analysis engine is busy." }));
+        const errorData = await res.json().catch(() => ({ detail: "Analysis engine is busy or timed out." }));
         setChatHistory(h => [
           ...h,
           { role: "assistant", content: `⚠️ **Analysis Error:** ${errorData.detail}` },
         ]);
       }
     } catch (err: any) {
+      console.error("Analysis Error:", err);
+      const isTimeout = err.name === 'AbortError';
       setChatHistory(h => [
         ...h,
-        { role: "assistant", content: `❌ **System Error:** Failed to reach engine at \`${backendUrl}\`. If this is a cold start, it may take 60s to wake up.` },
+        { role: "assistant", content: isTimeout 
+          ? "⏳ **Analysis Timeout:** The engine is taking longer than usual to process your documents. It's likely still working—please wait 30 seconds and try 'Graph' to see if concepts appeared."
+          : `❌ **System Error:** Failed to reach engine at \`${backendUrl}\`.` 
+        },
       ]);
-      checkBackend(); // Re-verify status
+      checkBackend(); 
     } finally {
       setLoading(false);
     }
