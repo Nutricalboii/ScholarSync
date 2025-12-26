@@ -84,34 +84,58 @@ async def root_head():
     return None
 
 @app.post("/upload")
-async def upload_material(file: UploadFile = File(...), x_session_id: Optional[str] = Header(None)):
+async def upload_materials(files: List[UploadFile] = File(...), x_session_id: Optional[str] = Header(None)):
     session_id = x_session_id or "default_user"
-    print(f"DEBUG: Uploading {file.filename} for session: {session_id}")
-    if not file.filename.endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+    print(f"DEBUG: Uploading {len(files)} files for session: {session_id}")
     
-    try:
-        content = await file.read()
-        text = extract_text_from_pdf(content)
+    if len(files) > 15:
+        raise HTTPException(status_code=400, detail="Maximum 15 files allowed.")
+    
+    total_size = 0
+    uploaded_count = 0
+    errors = []
+
+    for file in files:
+        if not file.filename.endswith(".pdf"):
+            errors.append(f"Skipped {file.filename}: Only PDF files are supported.")
+            continue
         
-        if not text.strip():
-            raise HTTPException(status_code=400, detail="No readable text found in PDF. This might be a scanned image or encrypted file.")
+        try:
+            # Check file size
+            await file.seek(0, 2) # Seek to end
+            file_size = await file.tell()
+            await file.seek(0) # Reset to start
             
-        # Chunk text and add to vector store with session isolation
-        chunks = chunk_text(text)
-        metadatas = [{"filename": file.filename, "chunk_index": i} for i in range(len(chunks))]
-        ids = [f"{file.filename}_{i}_{str(uuid.uuid4())[:8]}" for i in range(len(chunks))]
-        
-        vector_store.add_documents(session_id, chunks, metadatas, ids)
-        
-        return {
-            "message": f"Successfully uploaded {file.filename}", 
-            "chunks": len(chunks),
-            "filename": file.filename
-        }
-    except Exception as e:
-        print(f"Upload error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
+            total_size += file_size
+            if total_size > 100 * 1024 * 1024: # 100 MB limit
+                raise HTTPException(status_code=413, detail="Total upload size exceeds 100MB limit.")
+
+            content = await file.read()
+            text = extract_text_from_pdf(content)
+            
+            if not text.strip():
+                errors.append(f"Skipped {file.filename}: No readable text found.")
+                continue
+                
+            # Chunk text and add to vector store
+            chunks = chunk_text(text)
+            metadatas = [{"filename": file.filename, "chunk_index": i} for i in range(len(chunks))]
+            ids = [f"{file.filename}_{i}_{str(uuid.uuid4())[:8]}" for i in range(len(chunks))]
+            
+            vector_store.add_documents(session_id, chunks, metadatas, ids)
+            uploaded_count += 1
+            
+        except HTTPException as he:
+            raise he
+        except Exception as e:
+            print(f"Upload error for {file.filename}: {str(e)}")
+            errors.append(f"Error processing {file.filename}: {str(e)}")
+
+    return {
+        "message": f"Successfully uploaded {uploaded_count} files.", 
+        "count": uploaded_count,
+        "errors": errors if errors else None
+    }
 
 @app.post("/query", response_model=QueryResponse)
 async def query_materials(request: QueryRequest, x_session_id: Optional[str] = Header(None)):

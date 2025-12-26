@@ -189,32 +189,40 @@ export default function Home() {
     setUploading(true);
     setError("");
     
-    try {
-      for (const file of files) {
-        const formData = new FormData();
-        formData.append("file", file);
-        
-        const res = await fetch(`${backendUrl}/upload`, {
-          method: "POST",
-          body: formData,
-          headers: { 
-            "bypass-tunnel-reminder": "true",
-            "X-Session-ID": sessionId
-          }
-        });
-
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.detail || `Upload failed for ${file.name}`);
-        }
-      }
+    try:
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append("files", file);
+      });
       
-      setFiles([]);
-      fetchMaterials();
-      fetchConcepts();
-      alert(`Successfully uploaded ${files.length} file(s)!`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3-minute timeout for large uploads
+
+      const res = await fetch(`${backendUrl}/upload`, {
+        method: "POST",
+        body: formData,
+        headers: { 
+          "bypass-tunnel-reminder": "true",
+          "X-Session-ID": sessionId
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        setFiles([]);
+        fetchMaterials();
+        fetchConcepts();
+        const data = await res.json();
+        alert(data.message);
+      } else {
+        const data = await res.json();
+        throw new Error(data.detail || "Upload failed");
+      }
     } catch (err: any) {
-      setError(`Connection Error: ${err.message || "Could not reach backend"}. If you just pushed, the server might still be waking up (can take 60s).`);
+      const msg = err.name === 'AbortError' ? "Upload timed out. 100MB+ can take a while—try fewer files." : (err.message || "Could not reach backend");
+      setError(`Upload Error: ${msg}. If the server just pushed, it might take 60s to wake up.`);
     } finally {
       setUploading(false);
     }
