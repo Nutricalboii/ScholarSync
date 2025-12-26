@@ -44,7 +44,7 @@ export default function Home() {
 
   const [isDark, setIsDark] = useState(true);
   const [activeTab, setActiveTab] =
-    useState<"research" | "analysis">("research");
+    useState<"research" | "analysis" | "quiz" | "study">("research");
 
   /* ================= BACKEND ================= */
 
@@ -332,14 +332,20 @@ export default function Home() {
 
           <section className={`p-6 rounded-[2.5rem] ${isDark ? "bg-slate-900/40 border border-slate-900" : "bg-white shadow-xl shadow-slate-200/50"}`}>
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-30">Quiz</h2>
-            <button className="w-full py-3 bg-slate-950/50 border border-slate-900 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:border-blue-500 transition-all flex items-center justify-center gap-2">
+            <button 
+              onClick={() => setActiveTab('quiz')}
+              className={`w-full py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'quiz' ? 'bg-blue-600 text-white' : 'bg-slate-950/50 border border-slate-900 hover:border-blue-500'}`}
+            >
               <span>📝</span> Self Test
             </button>
           </section>
 
           <section className={`p-6 rounded-[2.5rem] ${isDark ? "bg-slate-900/40 border border-slate-900" : "bg-white shadow-xl shadow-slate-200/50"}`}>
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-30">Study</h2>
-            <button className="w-full py-3 bg-slate-950/50 border border-slate-900 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:border-blue-500 transition-all flex items-center justify-center gap-2">
+            <button 
+              onClick={() => setActiveTab('study')}
+              className={`w-full py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'study' ? 'bg-blue-600 text-white' : 'bg-slate-950/50 border border-slate-900 hover:border-blue-500'}`}
+            >
               <span>🃏</span> Flashcards
             </button>
           </section>
@@ -357,6 +363,12 @@ export default function Home() {
             {activeTab === 'research' ? (
               <div className="h-full flex flex-col p-8">
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 pr-4 mb-6">
+                  {chatHistory.length === 0 && (
+                    <div className="h-full flex flex-col items-center justify-center opacity-20 gap-4">
+                      <div className="text-4xl">✨</div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.3em]">Start your research journey</p>
+                    </div>
+                  )}
                   {chatHistory.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[80%] p-6 rounded-[2rem] ${msg.role === 'user' ? 'bg-blue-600 text-white' : isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-50'}`}>
@@ -388,7 +400,7 @@ export default function Home() {
                   <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">🏹</button>
                 </form>
               </div>
-            ) : (
+            ) : activeTab === 'analysis' ? (
               <div className="h-full flex flex-col p-8">
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6">
                   <div className="grid grid-cols-2 gap-4">
@@ -409,6 +421,18 @@ export default function Home() {
                     </div>
                   )}
                 </div>
+              </div>
+            ) : activeTab === 'quiz' ? (
+              <div className="h-full flex items-center justify-center p-8 text-center opacity-40 flex-col gap-6">
+                <div className="text-6xl">📝</div>
+                <h3 className="text-sm font-black uppercase tracking-[0.4em]">Quiz Engine Coming Soon</h3>
+                <p className="text-[10px] font-bold max-w-xs leading-relaxed opacity-50">We are currently calibrating the AI to generate precise questions from your library.</p>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center p-8 text-center opacity-40 flex-col gap-6">
+                <div className="text-6xl">🃏</div>
+                <h3 className="text-sm font-black uppercase tracking-[0.4em]">Flashcards Coming Soon</h3>
+                <p className="text-[10px] font-bold max-w-xs leading-relaxed opacity-50">Your personal spaced-repetition deck is being built by the analysis engine.</p>
               </div>
             )}
           </div>
