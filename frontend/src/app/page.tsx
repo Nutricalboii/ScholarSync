@@ -167,11 +167,12 @@ export default function Home() {
 
   useEffect(() => {
     checkBackend();
+    // Re-check every 30 seconds if offline to handle Render cold start
     const interval = setInterval(() => {
       if (backendStatus !== "online") {
         checkBackend();
       }
-    }, 10000); // Check every 10s if offline
+    }, 30000); 
     return () => clearInterval(interval);
   }, [checkBackend, backendStatus]);
 
@@ -510,6 +511,19 @@ export default function Home() {
       <footer className="px-10 py-6 border-t border-slate-900/50 text-center">
         <p className="text-[10px] font-bold uppercase tracking-widest opacity-30">ScholarSync AI &copy; 2025 &bull; Research with Confidence</p>
       </footer>
+
+      <style jsx global>{`
+        .flashcard-inner {
+          transform-style: preserve-3d;
+          transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .flashcard-back {
+          transform: rotateY(180deg);
+        }
+        .flashcard-flipped .flashcard-inner {
+          transform: rotateY(180deg);
+        }
+      `}</style>
     </div>
   );
 }
