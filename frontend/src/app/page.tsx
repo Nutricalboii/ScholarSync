@@ -72,11 +72,19 @@ export default function Home() {
         setError("");
       } else {
         setBackendStatus("offline");
-        setError("Engine is warming up...");
+        setError(`Engine returned status ${res.status}`);
       }
     } catch (err: any) {
+      console.error("Connection Check Error:", err);
       setBackendStatus("offline");
-      setError(err.name === 'AbortError' ? "Engine wake-up in progress..." : "Failed to reach analysis engine.");
+      
+      let msg = "Failed to reach engine.";
+      if (err.name === 'AbortError') {
+        msg = "Engine wake-up in progress (timeout)...";
+      } else if (err.message.includes('Failed to fetch') || err.name === 'TypeError') {
+        msg = `Connection Refused: Check if ${backendUrl} is correct.`;
+      }
+      setError(msg);
     }
   }, []);
 
