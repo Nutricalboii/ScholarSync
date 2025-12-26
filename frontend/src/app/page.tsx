@@ -8,11 +8,16 @@ import "katex/dist/katex.min.css";
 
 type Material = { filename: string };
 
-const backendUrl = (
+let backendUrl = (
   typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
     ? "http://localhost:10000"
     : (process.env.NEXT_PUBLIC_BACKEND_URL || "https://scholarsync-jh4j.onrender.com")
 ).trim().replace(/\/+$/, "");
+
+// Auto-fix protocol: If we are on HTTPS, force backend to HTTPS (unless localhost)
+if (typeof window !== "undefined" && window.location.protocol === "https:" && !backendUrl.includes("localhost")) {
+  backendUrl = backendUrl.replace("http://", "https://");
+}
 
 export default function Home() {
   /* ================= SESSION ================= */
@@ -247,8 +252,9 @@ export default function Home() {
     } catch (e: any) {
       setChatHistory(h => [
         ...h,
-        { role: "assistant", content: "❌ **System Error:** Failed to connect to engine. It might be waking up—please try again in a moment." },
+        { role: "assistant", content: `❌ **System Error:** Failed to connect to engine at \`${backendUrl}\`. It might be waking up—please try again in a moment.` },
       ]);
+      checkBackend(); // Re-verify status
     } finally {
       setLoading(false);
     }
@@ -275,7 +281,6 @@ export default function Home() {
           ...h,
           { role: "assistant", content: data.analysis, learningPath: data.learning_path },
         ]);
-        // After analysis, also refresh concepts for the graph
         fetchConcepts(true);
       } else {
         const errorData = await res.json().catch(() => ({ detail: "Analysis engine is busy." }));
@@ -287,8 +292,9 @@ export default function Home() {
     } catch (err: any) {
       setChatHistory(h => [
         ...h,
-        { role: "assistant", content: "❌ **System Error:** Failed to reach analysis engine. If this is a cold start, it may take 60s to wake up." },
+        { role: "assistant", content: `❌ **System Error:** Failed to reach engine at \`${backendUrl}\`. If this is a cold start, it may take 60s to wake up.` },
       ]);
+      checkBackend(); // Re-verify status
     } finally {
       setLoading(false);
     }
@@ -307,10 +313,13 @@ export default function Home() {
         </div>
         
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-full border border-slate-800">
-            <div className={`w-2 h-2 rounded-full animate-pulse ${backendStatus === 'online' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-            <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">{backendStatus}</span>
-          </div>
+          <button 
+            onClick={() => checkBackend()}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-full border border-slate-800 hover:border-blue-500 transition-colors group"
+          >
+            <div className={`w-2 h-2 rounded-full ${backendStatus === 'online' ? 'bg-emerald-500 animate-pulse' : backendStatus === 'checking' ? 'bg-amber-500 animate-bounce' : 'bg-rose-500'}`} />
+            <span className="text-[10px] font-bold uppercase tracking-widest opacity-50 group-hover:opacity-100">{backendStatus === 'online' ? 'Engine Live' : backendStatus === 'checking' ? 'Waking up...' : 'Reconnect'}</span>
+          </button>
           <button onClick={() => setIsDark(!isDark)} className="p-2 hover:bg-slate-800 rounded-xl transition-colors">{isDark ? "🌙" : "☀️"}</button>
         </div>
       </header>
