@@ -9,10 +9,10 @@ import "katex/dist/katex.min.css";
 type Material = { filename: string };
 
 const backendUrl = (
-  typeof window !== "undefined" && window.location.hostname === "localhost"
+  typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
     ? "http://localhost:10000"
-    : process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://scholarsync-jh4j.onrender.com"
-).replace(/[/\.]+$/, "");
+    : (process.env.NEXT_PUBLIC_BACKEND_URL || "https://scholarsync-jh4j.onrender.com")
+).trim().replace(/\/+$/, "");
 
 export default function Home() {
   /* ================= SESSION ================= */
@@ -67,10 +67,11 @@ export default function Home() {
         setError("");
       } else {
         setBackendStatus("offline");
+        setError("Engine is warming up...");
       }
-    } catch (err) {
+    } catch (err: any) {
       setBackendStatus("offline");
-      setError("Failed to reach analysis engine.");
+      setError(err.name === 'AbortError' ? "Engine wake-up in progress..." : "Failed to reach analysis engine.");
     }
   }, []);
 
@@ -153,9 +154,18 @@ export default function Home() {
 
   useEffect(() => {
     checkBackend();
+    const interval = setInterval(() => {
+      if (backendStatus !== "online") {
+        checkBackend();
+      }
+    }, 10000); // Check every 10s if offline
+    return () => clearInterval(interval);
+  }, [checkBackend, backendStatus]);
+
+  useEffect(() => {
     fetchMaterials();
     if (materials.length > 0) fetchConcepts();
-  }, [checkBackend, fetchMaterials, fetchConcepts, materials.length]);
+  }, [fetchMaterials, fetchConcepts, materials.length]);
 
   /* ================= ACTIONS ================= */
 
@@ -204,11 +214,10 @@ export default function Home() {
 
   const handleQuery = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!query.trim() || loading) return;
 
-    const currentQuery = query;   // ✅ FIX: snapshot query
+    const currentQuery = query;
     setQuery("");
-
     setChatHistory(h => [...h, { role: "user", content: currentQuery }]);
     setLoading(true);
 
@@ -229,7 +238,7 @@ export default function Home() {
           { role: "assistant", content: data.answer },
         ]);
       } else {
-        const errorData = await res.json().catch(() => ({ detail: "System Error: Failed to connect to backend" }));
+        const errorData = await res.json().catch(() => ({ detail: "Engine is processing... please wait." }));
         setChatHistory(h => [
           ...h,
           { role: "assistant", content: `⚠️ **Error:** ${errorData.detail || "The server encountered an error."}` },
@@ -238,7 +247,7 @@ export default function Home() {
     } catch (e: any) {
       setChatHistory(h => [
         ...h,
-        { role: "assistant", content: "❌ **System Error:** Failed to connect to backend. Please ensure the server is running." },
+        { role: "assistant", content: "❌ **System Error:** Failed to connect to engine. It might be waking up—please try again in a moment." },
       ]);
     } finally {
       setLoading(false);
@@ -246,7 +255,14 @@ export default function Home() {
   };
 
   const handleAnalyze = async () => {
+    if (materials.length === 0) {
+      setError("Please upload materials to analyze.");
+      return;
+    }
+    
     setLoading(true);
+    setActiveTab("research"); // Switch to chat to see the analysis result
+
     try {
       const res = await fetch(`${backendUrl}/analyze`, {
         method: "POST",
@@ -259,17 +275,19 @@ export default function Home() {
           ...h,
           { role: "assistant", content: data.analysis, learningPath: data.learning_path },
         ]);
+        // After analysis, also refresh concepts for the graph
+        fetchConcepts(true);
       } else {
-        const errorData = await res.json().catch(() => ({ detail: "Analysis failed" }));
+        const errorData = await res.json().catch(() => ({ detail: "Analysis engine is busy." }));
         setChatHistory(h => [
           ...h,
           { role: "assistant", content: `⚠️ **Analysis Error:** ${errorData.detail}` },
         ]);
       }
-    } catch {
+    } catch (err: any) {
       setChatHistory(h => [
         ...h,
-        { role: "assistant", content: "❌ **System Error:** Failed to reach analysis engine." },
+        { role: "assistant", content: "❌ **System Error:** Failed to reach analysis engine. If this is a cold start, it may take 60s to wake up." },
       ]);
     } finally {
       setLoading(false);
