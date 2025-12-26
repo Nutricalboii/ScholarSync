@@ -116,7 +116,7 @@ def upload_to_gemini(file_bytes: bytes, filename: str):
         
     try:
         uploaded_file = client.files.upload_file(path=tmp_path, display_name=filename)
-        return uploaded_file.uri
+        return uploaded_file
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
@@ -132,14 +132,3 @@ def get_embeddings(texts: list[str]) -> list[list[float]]:
         contents=texts
     )
     return [item.values for item in response.embeddings]
-
-@retry_with_backoff(retries=3, initial_delay=2)
-def upload_pdf_bytes(file_bytes: bytes, display_name: str):
-    if not client:
-        raise Exception("Configuration Error: API Key not found")
-    import tempfile
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        tmp.write(file_bytes)
-        tmp_path = tmp.name
-    uploaded = client.files.upload_file(path=tmp_path, display_name=display_name)
-    return uploaded

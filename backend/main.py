@@ -114,8 +114,8 @@ async def upload_materials(files: List[UploadFile] = File(...), x_session_id: Op
             gemini_file_id = None
             if file_size > 20 * 1024 * 1024:
                 try:
-                    from utils.gemini_client import upload_pdf_bytes
-                    uploaded = upload_pdf_bytes(content, file.filename)
+                    from utils.gemini_client import upload_to_gemini
+                    uploaded = upload_to_gemini(content, file.filename)
                     gemini_file_id = getattr(uploaded, "name", None)
                 except Exception as e:
                     errors.append(f"Gemini Files upload failed for {file.filename}: {str(e)}")

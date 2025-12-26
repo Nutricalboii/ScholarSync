@@ -266,10 +266,10 @@ export default function Home() {
           sources: data.sources
         }]);
       } else {
-        const data = await res.json();
-        if (res.status === 429) {
-          triggerToast("AI is taking a breather! Please wait a moment before asking again.");
+        if (res.status === 429 || res.status === 500) {
+          triggerToast("AI is taking a break, please wait 10 seconds.");
         } else {
+          const data = await res.json();
           setError(data.detail || "Query failed");
         }
       }
@@ -316,10 +316,14 @@ export default function Home() {
           learningPath: data.learning_path
         }]);
       } else {
-        const data = await res.json();
-        const errorMessage = data.detail || "Analysis failed";
-        setError(errorMessage);
-        setChatHistory(prev => [...prev, { role: 'assistant', content: `Sorry, I couldn't perform the analysis: ${errorMessage}` }]);
+        if (res.status === 429 || res.status === 500) {
+          triggerToast("AI is taking a break, please wait 10 seconds.");
+        } else {
+          const data = await res.json();
+          const errorMessage = data.detail || "Analysis failed";
+          setError(errorMessage);
+          setChatHistory(prev => [...prev, { role: 'assistant', content: `Sorry, I couldn't perform the analysis: ${errorMessage}` }]);
+        }
       }
     } catch (err: any) {
       const msg = err.name === 'AbortError' ? "Analysis timed out. Try with fewer documents." : "Failed to connect to backend";
@@ -364,10 +368,14 @@ export default function Home() {
           quiz: data.questions
         }]);
       } else {
-        const data = await res.json();
-        const errorMessage = data.detail || "Quiz generation failed";
-        setError(errorMessage);
-        setChatHistory(prev => [...prev, { role: 'assistant', content: `Sorry, I couldn't generate the quiz: ${errorMessage}` }]);
+        if (res.status === 429 || res.status === 500) {
+          triggerToast("AI is taking a break, please wait 10 seconds.");
+        } else {
+          const data = await res.json();
+          const errorMessage = data.detail || "Quiz generation failed";
+          setError(errorMessage);
+          setChatHistory(prev => [...prev, { role: 'assistant', content: `Sorry, I couldn't generate the quiz: ${errorMessage}` }]);
+        }
       }
     } catch (err: any) {
       const msg = err.name === 'AbortError' ? "Request timed out (60s). Please try again." : "Failed to connect to backend";
@@ -412,8 +420,12 @@ export default function Home() {
           flashcards: data.flashcards
         }]);
       } else {
-        const data = await res.json();
-        setError(data.detail || "Flashcard generation failed");
+        if (res.status === 429 || res.status === 500) {
+          triggerToast("AI is taking a break, please wait 10 seconds.");
+        } else {
+          const data = await res.json();
+          setError(data.detail || "Flashcard generation failed");
+        }
       }
     } catch (err: any) {
       const msg = err.name === 'AbortError' ? "Request timed out (60s). Please try again." : "Failed to connect to backend";
