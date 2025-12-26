@@ -557,7 +557,7 @@ export default function Home() {
                 <h2 className="text-[9px] font-black uppercase tracking-[0.2em]">Vault</h2>
               </div>
               <form onSubmit={handleUpload} className="space-y-4">
-                <div className={`border-2 border-dashed rounded-[2rem] p-6 text-center transition-all cursor-pointer group/upload
+                <div className={`relative border-2 border-dashed rounded-[2rem] p-6 text-center transition-all cursor-pointer group/upload
                   ${isDark ? "border-slate-800/50 hover:border-blue-500/50 hover:bg-blue-500/5" : "border-slate-200 hover:border-blue-400 hover:bg-blue-50"}`}>
                   <input
                     type="file"
