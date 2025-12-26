@@ -298,7 +298,7 @@ export default function Home() {
                   type="file" 
                   multiple 
                   accept=".pdf" 
-                  onChange={(e) => setFiles(Array.from(e.target.files || []))} 
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFiles(Array.from(e.target.files || []))} 
                   className="absolute inset-0 opacity-0 cursor-pointer z-[5]" 
                 />
                 <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">☁️</div>
@@ -360,9 +360,14 @@ export default function Home() {
                   {chatHistory.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[80%] p-6 rounded-[2rem] ${msg.role === 'user' ? 'bg-blue-600 text-white' : isDark ? 'bg-slate-900 border border-slate-800' : 'bg-slate-50'}`}>
-                        <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]} className="text-sm leading-relaxed prose prose-invert max-w-none">
-                          {msg.content}
-                        </ReactMarkdown>
+                        <div className="text-sm leading-relaxed prose prose-invert max-w-none">
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkMath as any]} 
+                            rehypePlugins={[rehypeKatex as any]}
+                          >
+                            {String(msg.content || "")}
+                          </ReactMarkdown>
+                        </div>
                         {msg.learningPath && (
                           <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
                             <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-3">Learning Path</h4>
