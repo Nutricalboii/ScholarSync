@@ -8,16 +8,7 @@ import "katex/dist/katex.min.css";
 
 type Material = { filename: string };
 
-let backendUrl = (
-  typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-    ? "http://localhost:10000"
-    : (process.env.NEXT_PUBLIC_BACKEND_URL || "https://scholarsync-jh4j.onrender.com")
-).trim().replace(/[.\/]+$/, ""); // 100% strip trailing dots and slashes
-
-// Auto-fix protocol: If we are on HTTPS, force backend to HTTPS (unless localhost)
-if (typeof window !== "undefined" && window.location.protocol === "https:" && !backendUrl.includes("localhost")) {
-  backendUrl = backendUrl.replace("http://", "https://");
-}
+const backendUrl = "https://scholarsync-jh4j.onrender.com";
 
 export default function Home() {
   /* ================= SESSION ================= */
@@ -57,12 +48,10 @@ export default function Home() {
   const checkBackend = useCallback(async () => {
     setBackendStatus("checking");
     try {
-      console.log(`Pinging Engine at: ${backendUrl}`);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s for cold start
+      const timeoutId = setTimeout(() => controller.abort(), 60000); 
 
       const res = await fetch(`${backendUrl}/`, {
-        headers: { "Accept": "application/json" },
         signal: controller.signal,
       });
 
@@ -72,19 +61,10 @@ export default function Home() {
         setError("");
       } else {
         setBackendStatus("offline");
-        setError(`Engine returned status ${res.status}`);
       }
-    } catch (err: any) {
-      console.error("Connection Check Error:", err);
+    } catch (err) {
       setBackendStatus("offline");
-      
-      let msg = "Failed to reach engine.";
-      if (err.name === 'AbortError') {
-        msg = "Engine wake-up in progress (timeout)...";
-      } else if (err.message.includes('Failed to fetch') || err.name === 'TypeError') {
-        msg = `Connection Refused: Check if ${backendUrl} is correct.`;
-      }
-      setError(msg);
+      setError("System Error: Failed to reach engine.");
     }
   }, []);
 
@@ -167,14 +147,9 @@ export default function Home() {
 
   useEffect(() => {
     checkBackend();
-    // Re-check every 30 seconds if offline to handle Render cold start
-    const interval = setInterval(() => {
-      if (backendStatus !== "online") {
-        checkBackend();
-      }
-    }, 30000); 
+    const interval = setInterval(checkBackend, 15000);
     return () => clearInterval(interval);
-  }, [checkBackend, backendStatus]);
+  }, [checkBackend]);
 
   useEffect(() => {
     fetchMaterials();
