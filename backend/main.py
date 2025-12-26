@@ -79,6 +79,7 @@ async def root_head():
 
 @app.post("/upload")
 async def upload_materials(
+    response: Response,
     files: List[UploadFile] = File(...),
     x_session_id: Optional[str] = Header(None),
 ):
