@@ -50,14 +50,14 @@ def get_gemini_response(prompt: str, context: str = "") -> str:
     
     system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
     
-    full_prompt = f"Context:\n{context}\n\nQuestion: {prompt}" if context else prompt
+    full_prompt = f"{system_instruction}\n\nContext:\n{context}\n\nQuestion: {prompt}" if context else f"{system_instruction}\n\nQuestion: {prompt}"
     
     try:
         response = client.models.generate_content(
             model='gemini-1.5-flash',
             contents=full_prompt,
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction
+                # system_instruction moved to prompt for v1 compatibility
             )
         )
         print(f"DEBUG: Successfully received response (length: {len(response.text)})")
@@ -78,14 +78,14 @@ def get_structured_response(prompt: str, context: str = "") -> str:
     
     system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
     
-    full_prompt = f"Context:\n{context}\n\nInstruction: {prompt}" if context else prompt
+    full_prompt = f"{system_instruction}\n\nContext:\n{context}\n\nInstruction: {prompt}" if context else f"{system_instruction}\n\nInstruction: {prompt}"
     
     try:
         response = client.models.generate_content(
             model='gemini-1.5-flash',
             contents=full_prompt,
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
+                # system_instruction moved to prompt for v1 compatibility
                 response_mime_type='application/json'
             )
         )

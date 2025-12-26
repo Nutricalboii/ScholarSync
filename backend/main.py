@@ -94,6 +94,9 @@ async def upload_material(file: UploadFile = File(...), x_session_id: Optional[s
         content = await file.read()
         text = extract_text_from_pdf(content)
         
+        if not text.strip():
+            raise HTTPException(status_code=400, detail="No readable text found in PDF. This might be a scanned image or encrypted file.")
+            
         # Chunk text and add to vector store with session isolation
         chunks = chunk_text(text)
         metadatas = [{"filename": file.filename, "chunk_index": i} for i in range(len(chunks))]

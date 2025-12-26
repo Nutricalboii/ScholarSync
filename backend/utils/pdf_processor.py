@@ -6,10 +6,14 @@ def extract_text_from_pdf(file_content: bytes) -> str:
     pdf_reader = pypdf.PdfReader(io.BytesIO(file_content))
     text = ""
     for page in pdf_reader.pages:
-        text += page.extract_text() or "" + "\n"
+        extracted = page.extract_text()
+        if extracted:
+            text += extracted + "\n"
     
     if not text.strip():
-        print(f"WARNING: No text could be extracted from the PDF.")
+        print(f"DEBUG WARNING: No text extracted from PDF. This might be a scanned image or encrypted file.")
+    else:
+        print(f"DEBUG: Extracted {len(text)} characters from PDF.")
         
     return text
 
