@@ -12,20 +12,21 @@ const backendUrl = (
   typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "http://localhost:10000"
     : process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://scholarsync-jh4j.onrender.com"
-).replace(/\/+$/, "");
+).replace(/[/\.]+$/, "");
 
 export default function Home() {
   /* ================= SESSION ================= */
-  const [sessionId, setSessionId] = useState("default");
-
-  useEffect(() => {
-    let id = localStorage.getItem("scholar_sync_session");
-    if (!id) {
-      id = "user_" + Math.random().toString(36).slice(2, 9);
-      localStorage.setItem("scholar_sync_session", id);
+  const [sessionId] = useState(() => {
+    if (typeof window !== "undefined") {
+      let id = localStorage.getItem("scholar_sync_session");
+      if (!id) {
+        id = "user_" + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem("scholar_sync_session", id);
+      }
+      return id;
     }
-    setSessionId(id);
-  }, []);
+    return "default";
+  });
 
   /* ================= STATE ================= */
   const [files, setFiles] = useState<File[]>([]);
@@ -51,16 +52,25 @@ export default function Home() {
   const checkBackend = useCallback(async () => {
     setBackendStatus("checking");
     try {
+      console.log(`Pinging Engine at: ${backendUrl}`);
       const controller = new AbortController();
-      setTimeout(() => controller.abort(), 60000);
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s for cold start
 
       const res = await fetch(`${backendUrl}/`, {
+        headers: { "Accept": "application/json" },
         signal: controller.signal,
       });
 
-      setBackendStatus(res.ok ? "online" : "offline");
-    } catch {
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        setBackendStatus("online");
+        setError("");
+      } else {
+        setBackendStatus("offline");
+      }
+    } catch (err) {
       setBackendStatus("offline");
+      setError("Failed to reach analysis engine.");
     }
   }, []);
 
@@ -353,9 +363,10 @@ export default function Home() {
 
         {/* Main Content */}
         <div className="col-span-9 flex flex-col gap-6 overflow-hidden">
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
             <button onClick={() => setActiveTab('research')} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === 'research' ? 'bg-blue-600 text-white' : 'bg-slate-900/40 opacity-40 hover:opacity-100'}`}>Research</button>
             <button onClick={() => setActiveTab('analysis')} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === 'analysis' ? 'bg-blue-600 text-white' : 'bg-slate-900/40 opacity-40 hover:opacity-100'}`}>Graph</button>
+            {error && <span className="text-[10px] font-bold text-rose-500 animate-pulse">❌ {error}</span>}
             <button onClick={handleAnalyze} className="ml-auto px-8 py-3 bg-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all">Deep Analysis</button>
           </div>
 
