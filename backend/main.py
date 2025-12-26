@@ -181,15 +181,21 @@ async def query_materials(
 @app.post("/analyze", response_model=AnalysisResponse)
 async def analyze(x_session_id: Optional[str] = Header(None)):
     session_id = x_session_id or "default_user"
-    results = vector_store.query(session_id, "Provide a comprehensive summary and analysis of the main topics and key findings across all documents.", n_results=10)
+    # Reduce n_results to prevent memory overload on free tier
+    results = vector_store.query(session_id, "Provide a comprehensive summary and analysis of the main topics and key findings across all documents.", n_results=5)
     docs = results.get("documents", [[]])[0]
 
     if not docs:
         raise HTTPException(400, "No material to analyze. Please upload documents first.")
 
+    # Truncate total context to 30,000 chars to avoid timeouts
+    full_context = "\n\n".join(docs)
+    if len(full_context) > 30000:
+        full_context = full_context[:30000] + "... (truncated)"
+
     raw = get_structured_response(
         "Analyze the provided context. Return a JSON object with three fields: 'analysis' (a detailed string), 'learning_path' (a list of 5 progressive steps to master the content), and 'connections' (a list of 3-5 links between different topics).",
-        "\n\n".join(docs),
+        full_context,
     )
 
     try:

@@ -261,22 +261,26 @@ export default function Home() {
       return;
     }
     
-    if (loading) return; // Prevent double-clicks
+    if (loading) return;
     setLoading(true);
     setActiveTab("research");
 
     try {
       console.log("Starting Deep Analysis...");
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes for heavy analysis
+      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout
 
       const res = await fetch(`${backendUrl}/analyze`, {
         method: "POST",
-        headers: { "X-Session-ID": sessionId },
+        headers: { 
+          "X-Session-ID": sessionId,
+          "Accept": "application/json"
+        },
         signal: controller.signal
       });
 
       clearTimeout(timeoutId);
+
       if (res.ok) {
         const data = await res.json();
         setChatHistory(h => [
@@ -284,6 +288,11 @@ export default function Home() {
           { role: "assistant", content: data.analysis, learningPath: data.learning_path },
         ]);
         fetchConcepts(true);
+      } else if (res.status === 504 || res.status === 429) {
+        setChatHistory(h => [
+          ...h,
+          { role: "assistant", content: "⚠️ **Analysis Busy:** The engine is warming up or busy. Please wait 10 seconds and try again." },
+        ]);
       } else {
         const errorData = await res.json().catch(() => ({ detail: "Analysis engine is busy or timed out." }));
         setChatHistory(h => [
@@ -297,7 +306,7 @@ export default function Home() {
       setChatHistory(h => [
         ...h,
         { role: "assistant", content: isTimeout 
-          ? "⏳ **Analysis Timeout:** Your documents are very large, and the AI is still reading them. The process is running in the background—please check the 'Graph' tab in 1-2 minutes to see the results."
+          ? "⏳ **Analysis Timeout:** The engine is taking longer than usual (likely due to large files). Try analyzing fewer documents or wait a moment and try again."
           : `❌ **System Error:** Failed to reach engine at \`${backendUrl}\`.` 
         },
       ]);
