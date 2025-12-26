@@ -189,7 +189,7 @@ export default function Home() {
     setUploading(true);
     setError("");
     
-    try:
+    try {
       const formData = new FormData();
       files.forEach(file => {
         formData.append("files", file);
