@@ -42,24 +42,30 @@ def retry_with_backoff(retries=3, initial_delay=2):
     return decorator
 
 @retry_with_backoff(retries=3, initial_delay=2)
-def get_gemini_response(prompt: str, context: str = "") -> str:
+def get_gemini_response(prompt: str, context: str = "", **kwargs) -> str:
     """Generates a response from Gemini using the provided context."""
     print(f"DEBUG: Generating text response for prompt: {prompt[:50]}...")
     if not client:
-        print("ERROR: Gemini API client not configured.")
-        return "Error: Gemini API client not configured."
+        raise Exception("Configuration Error: API Key not found")
     
-    system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
+    system_instruction = "You are a professional research assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
     
-    full_prompt = f"{system_instruction}\n\nContext:\n{context}\n\nQuestion: {prompt}" if context else f"{system_instruction}\n\nQuestion: {prompt}"
+    # Construct contents: handle both text and file references
+    contents = [f"{system_instruction}\n\n"]
+    if context:
+        contents.append(f"Context:\n{context}\n\n")
+    
+    file_ids = kwargs.get('file_ids', [])
+    for fid in file_ids:
+        contents.append(types.Content(parts=[types.Part(file_data=types.FileData(file_uri=fid, mime_type="application/pdf"))]))
+            
+    contents.append(f"Question: {prompt}")
     
     try:
         response = client.models.generate_content(
             model='gemini-1.5-flash-latest',
-            contents=full_prompt,
-            config=types.GenerateContentConfig(
-                # system_instruction moved to prompt for v1 compatibility
-            )
+            contents=contents,
+            config=types.GenerateContentConfig()
         )
         print(f"DEBUG: Successfully received response (length: {len(response.text)})")
         return response.text
@@ -74,8 +80,7 @@ def get_structured_response(prompt: str, context: str = "") -> str:
     """Generates a response from Gemini that is expected to be structured (like JSON)."""
     print(f"DEBUG: Generating structured response for prompt: {prompt[:50]}...")
     if not client:
-        print("ERROR: Gemini API client not configured.")
-        return "[]"
+        raise Exception("Configuration Error: API Key not found")
     
     system_instruction = "You are a helpful academic assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
     
@@ -98,6 +103,24 @@ def get_structured_response(prompt: str, context: str = "") -> str:
         print(f"Structured response failed, falling back: {str(e)}")
         return get_gemini_response(prompt, context)
 
+@retry_with_backoff(retries=3, initial_delay=2)
+def upload_to_gemini(file_bytes: bytes, filename: str):
+    """Uploads a file to Gemini Files API for large payload processing."""
+    if not client:
+        raise Exception("Configuration Error: API Key not found")
+    
+    import tempfile
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(file_bytes)
+        tmp_path = tmp.name
+        
+    try:
+        uploaded_file = client.files.upload_file(path=tmp_path, display_name=filename)
+        return uploaded_file.uri
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
 @retry_with_backoff(retries=5, initial_delay=5)
 def get_embeddings(texts: list[str]) -> list[list[float]]:
     """Generates embeddings for a list of texts using Gemini's embedding model."""
@@ -109,3 +132,14 @@ def get_embeddings(texts: list[str]) -> list[list[float]]:
         contents=texts
     )
     return [item.values for item in response.embeddings]
+
+@retry_with_backoff(retries=3, initial_delay=2)
+def upload_pdf_bytes(file_bytes: bytes, display_name: str):
+    if not client:
+        raise Exception("Configuration Error: API Key not found")
+    import tempfile
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(file_bytes)
+        tmp_path = tmp.name
+    uploaded = client.files.upload_file(path=tmp_path, display_name=display_name)
+    return uploaded

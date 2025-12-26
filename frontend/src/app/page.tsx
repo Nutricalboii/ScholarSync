@@ -131,7 +131,7 @@ export default function Home() {
     setMaterialsLoading(true);
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
 
       const res = await fetch(`${backendUrl}/materials`, {
         headers: { 
@@ -215,7 +215,7 @@ export default function Home() {
         fetchMaterials();
         fetchConcepts();
         const data = await res.json();
-        alert(data.message);
+        triggerToast(data.message || "Successfully synced!");
       } else {
         const data = await res.json();
         throw new Error(data.detail || "Upload failed");
@@ -565,24 +565,48 @@ export default function Home() {
                     multiple
                     onChange={(e) => {
                       const selectedFiles = Array.from(e.target.files || []);
-                      setFiles(selectedFiles);
+                      setFiles(prev => {
+                        const newFiles = [...prev];
+                        selectedFiles.forEach(sf => {
+                          if (!newFiles.some(f => f.name === sf.name && f.size === sf.size)) {
+                            newFiles.push(sf);
+                          }
+                        });
+                        return newFiles.slice(0, 15);
+                      });
+                      e.target.value = '';
                     }}
-                    className="hidden"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     id="file-upload"
                   />
-                  <label htmlFor="file-upload" className="cursor-pointer space-y-3 block">
+                  <div className="relative z-0 space-y-3 pointer-events-none">
                     <div className="text-3xl grayscale group-hover/upload:grayscale-0 transition-all transform group-hover/upload:scale-110 duration-500">☁️</div>
-                    {files.length > 0 ? (
-                      <div className="space-y-1">
-                        <span className="text-blue-500 text-[10px] font-black uppercase tracking-widest block">{files.length} Files</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] block opacity-30 group-hover/upload:opacity-100 transition-opacity">Import</span>
-                      </div>
-                    )}
-                  </label>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] block opacity-30 group-hover/upload:opacity-100 transition-opacity">
+                        {files.length > 0 ? `${files.length} Selected` : 'Import PDFs'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+
+                {files.length > 0 && (
+                  <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar px-2">
+                    {files.map((file, idx) => (
+                      <div key={`${file.name}-${idx}`} className={`flex items-center justify-between p-2 rounded-xl text-[10px] ${isDark ? "bg-white/5" : "bg-black/5"}`}>
+                        <span className="truncate max-w-[120px] opacity-70">{file.name}</span>
+                        <button 
+                          type="button"
+                          onClick={() => setFiles(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-rose-500 hover:text-rose-400 p-1"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <button
                   type="submit"
                   disabled={files.length === 0 || uploading}
@@ -699,7 +723,15 @@ export default function Home() {
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="font-medium text-sm">{error}</span>
+                      <span className="font-medium text-sm flex-grow">{error}</span>
+                      {error.includes("offline") && (
+                        <button 
+                          onClick={checkBackend}
+                          className="px-3 py-1 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-colors"
+                        >
+                          Retry
+                        </button>
+                      )}
                     </div>
                   )}
                   

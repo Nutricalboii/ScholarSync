@@ -2,7 +2,8 @@ fastapi
 uvicorn[standard]
 gunicorn
 google-genai
-pypdf
+google-generativeai>=0.7.2
+pypdf>=4.0.0
 python-multipart
 python-dotenv
 chromadb

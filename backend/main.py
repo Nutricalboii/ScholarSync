@@ -111,6 +111,14 @@ async def upload_materials(files: List[UploadFile] = File(...), x_session_id: Op
                 raise HTTPException(status_code=413, detail="Total upload size exceeds 100MB limit.")
 
             content = await file.read()
+            gemini_file_id = None
+            if file_size > 20 * 1024 * 1024:
+                try:
+                    from utils.gemini_client import upload_pdf_bytes
+                    uploaded = upload_pdf_bytes(content, file.filename)
+                    gemini_file_id = getattr(uploaded, "name", None)
+                except Exception as e:
+                    errors.append(f"Gemini Files upload failed for {file.filename}: {str(e)}")
             text = extract_text_from_pdf(content)
             
             if not text.strip():
@@ -119,7 +127,7 @@ async def upload_materials(files: List[UploadFile] = File(...), x_session_id: Op
                 
             # Chunk text and add to vector store
             chunks = chunk_text(text)
-            metadatas = [{"filename": file.filename, "chunk_index": i} for i in range(len(chunks))]
+            metadatas = [{"filename": file.filename, "chunk_index": i, "gemini_file_id": gemini_file_id} for i in range(len(chunks))]
             ids = [f"{file.filename}_{i}_{str(uuid.uuid4())[:8]}" for i in range(len(chunks))]
             
             vector_store.add_documents(session_id, chunks, metadatas, ids)
