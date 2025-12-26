@@ -12,10 +12,11 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 client = None
 
 if API_KEY:
+    print("✅ SUCCESS: GEMINI_API_KEY detected. Configuring Gemini...")
     # Force stable v1 API version to avoid v1beta model availability issues
     client = genai.Client(api_key=API_KEY, http_options={'api_version': 'v1'})
 else:
-    print("Warning: GEMINI_API_KEY not found in environment variables.")
+    print("❌ ERROR: GEMINI_API_KEY not found in environment variables!")
 
 def retry_with_backoff(retries=3, initial_delay=2):
     def decorator(func):
@@ -54,7 +55,7 @@ def get_gemini_response(prompt: str, context: str = "") -> str:
     
     try:
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-1.5-flash-latest',
             contents=full_prompt,
             config=types.GenerateContentConfig(
                 # system_instruction moved to prompt for v1 compatibility
@@ -82,7 +83,7 @@ def get_structured_response(prompt: str, context: str = "") -> str:
     
     try:
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-1.5-flash-latest',
             contents=full_prompt,
             config=types.GenerateContentConfig(
                 # system_instruction moved to prompt for v1 compatibility
