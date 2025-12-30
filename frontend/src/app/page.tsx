@@ -460,23 +460,59 @@ export default function Home() {
                 </form>
               </div>
             ) : activeTab === 'analysis' ? (
-              <div className="h-full flex flex-col p-8">
-                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
+              <div className="h-full flex flex-col p-8 bg-[#020617] relative overflow-hidden">
+                {/* Background Tech Grid Effect */}
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                     style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+                
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6 relative z-10">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {concepts.map((concept, i) => (
-                      <div key={i} className="p-6 bg-slate-900/50 border border-slate-800 rounded-[2rem] hover:border-blue-500/50 transition-all group">
-                        <div className="flex justify-between items-start mb-4">
-                          <h3 className="text-sm font-black text-blue-400">{concept.term}</h3>
-                          <span className="px-2 py-1 bg-blue-500/10 text-[8px] font-bold text-blue-500 rounded-lg">Level {concept.importance}</span>
+                      <div key={i} className="group relative">
+                        {/* Node Connection Line (Visual Only) */}
+                        <div className="absolute -left-3 top-1/2 w-3 h-[2px] bg-blue-500/20 group-hover:bg-blue-500/50 transition-colors"></div>
+                        
+                        <div className="p-6 bg-slate-900/40 border border-slate-800/50 rounded-2xl hover:border-blue-500/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)] hover:-translate-y-1 relative overflow-hidden backdrop-blur-sm">
+                          {/* Glow Effect */}
+                          <div className="absolute -right-8 -top-8 w-24 h-24 bg-blue-600/5 rounded-full blur-2xl group-hover:bg-blue-600/10 transition-all"></div>
+                          
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="space-y-1">
+                              <h3 className="text-sm font-black text-blue-400 tracking-wider uppercase group-hover:text-blue-300 transition-colors">
+                                {concept.term}
+                              </h3>
+                              <div className="flex gap-1">
+                                {[...Array(5)].map((_, idx) => (
+                                  <div key={idx} className={`w-3 h-1 rounded-full ${idx < Math.ceil(concept.importance/2) ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'bg-slate-800'}`}></div>
+                                ))}
+                              </div>
+                            </div>
+                            <span className="text-[9px] font-black px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-tighter">
+                              Level {concept.importance}
+                            </span>
+                          </div>
+                          
+                          <p className="text-[11px] leading-relaxed text-slate-400 group-hover:text-slate-300 transition-colors font-medium">
+                            {concept.definition}
+                          </p>
+
+                          {/* Tech Decorative Corner */}
+                          <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-slate-800 group-hover:border-blue-500/30 transition-colors rounded-br-sm"></div>
                         </div>
-                        <p className="text-[11px] leading-relaxed opacity-60">{concept.definition}</p>
                       </div>
                     ))}
                   </div>
+                  
                   {concepts.length === 0 && (
-                    <div className="h-full flex items-center justify-center opacity-20 flex-col gap-4">
-                      <div className="text-4xl">🕸️</div>
-                      <p className="text-[10px] font-black uppercase tracking-widest">No concepts mapped yet</p>
+                    <div className="h-full flex items-center justify-center flex-col gap-6 py-20">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full"></div>
+                        <div className="text-6xl relative animate-pulse">🕸️</div>
+                      </div>
+                      <div className="space-y-2 text-center">
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500/60">Neural Map Offline</p>
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Click 'Deep Analysis' to initialize tech-tree</p>
+                      </div>
                     </div>
                   )}
                 </div>
