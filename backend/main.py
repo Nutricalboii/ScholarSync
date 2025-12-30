@@ -182,7 +182,7 @@ async def query_materials(
     x_session_id: Optional[str] = Header(None),
 ):
     session_id = x_session_id or "default_user"
-    results = vector_store.query(session_id, request.prompt, n_results=5)
+    results = vector_store.query(session_id, request.prompt, n_results=6)
 
     docs = results.get("documents", [[]])[0]
     metas = results.get("metas", results.get("metadatas", [[]]))[0]

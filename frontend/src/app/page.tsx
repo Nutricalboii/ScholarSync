@@ -53,6 +53,15 @@ export default function Home() {
   const [quizLoading, setQuizLoading] = useState(false);
 
   /* ================= BACKEND ================= */
+  useEffect(() => {
+    checkBackend();
+    const interval = setInterval(() => {
+      if (backendStatus !== 'online') {
+        checkBackend();
+      }
+    }, 20000); // Heartbeat ping every 20s
+    return () => clearInterval(interval);
+  }, [backendStatus, checkBackend]);
 
   const checkBackend = useCallback(async () => {
     setBackendStatus("checking");
@@ -394,11 +403,11 @@ export default function Home() {
       <main className="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
         {/* Sidebar */}
         <aside className="col-span-3 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
-          <div className={`flex-1 flex flex-col gap-4 p-4 rounded-[2rem] ${isDark ? "bg-slate-900/20 border border-slate-900" : "bg-white shadow-xl shadow-slate-200/50"}`}>
+          <div className={`flex-1 flex flex-col gap-6 p-6 rounded-[2.5rem] backdrop-blur-xl ${isDark ? "bg-slate-900/40 border border-slate-800" : "bg-white shadow-xl shadow-slate-200/50"}`}>
             <section>
-              <h2 className="text-[9px] font-black uppercase tracking-[0.2em] mb-4 px-2 opacity-30">Vault</h2>
-              <form onSubmit={handleUpload} className="relative isolate space-y-3">
-                <div className="relative border-2 border-dashed border-slate-800/50 rounded-2xl p-6 text-center hover:border-blue-500/50 transition-colors cursor-pointer group">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] mb-6 opacity-30">Vault</h2>
+              <form onSubmit={handleUpload} className="relative isolate space-y-4">
+                <div className="relative border-2 border-dashed border-slate-800 rounded-3xl p-8 text-center hover:border-blue-500 transition-colors cursor-pointer group">
                   <input 
                     type="file" 
                     multiple 
@@ -406,13 +415,13 @@ export default function Home() {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFiles(Array.from(e.target.files || []))} 
                     className="absolute inset-0 opacity-0 cursor-pointer z-[5]" 
                   />
-                  <div className="text-xl mb-1 group-hover:scale-110 transition-transform">☁️</div>
-                  <div className="text-[9px] font-bold opacity-40 uppercase tracking-wider">{files.length > 0 ? `${files.length} Selected` : 'Drop PDFs'}</div>
+                  <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">☁️</div>
+                  <div className="text-[10px] font-bold opacity-40 uppercase tracking-wider">{files.length > 0 ? `${files.length} Selected` : 'Drop PDFs'}</div>
                 </div>
                 <button 
                   type="submit"
                   disabled={files.length === 0 || uploading} 
-                  className="relative z-[50] w-full py-3 bg-blue-600 rounded-xl font-black text-[9px] uppercase tracking-[0.3em] hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-600/10 active:scale-95"
+                  className="relative z-[50] w-full py-4 bg-blue-600 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-blue-700 disabled:opacity-50 transition-all shadow-2xl shadow-blue-600/20 active:scale-95"
                 >
                   {uploading ? "Processing..." : "Sync"}
                 </button>
@@ -420,40 +429,20 @@ export default function Home() {
             </section>
 
             <section className="flex-1 flex flex-col min-h-0">
-              <div className="flex items-center justify-between mb-4 px-2">
-                <h2 className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30">Library</h2>
-                <button onClick={clearMaterials} className="text-rose-500 hover:scale-110 transition-transform text-xs">🗑️</button>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Library</h2>
+                <button onClick={clearMaterials} className="text-rose-500 hover:scale-110 transition-transform">🗑️</button>
               </div>
-              <div className="space-y-1 overflow-y-auto custom-scrollbar pr-1">
+              <div className="space-y-2 overflow-y-auto custom-scrollbar pr-2">
                 {materials.map((m, i) => (
-                  <div key={i} className="flex items-center justify-between p-2.5 bg-slate-950/30 rounded-xl border border-slate-900/50 group">
-                    <span className="text-[9px] font-bold truncate pr-2 opacity-70">{m.filename}</span>
-                    <button onClick={() => deleteMaterial(m.filename)} className="opacity-0 group-hover:opacity-100 transition-opacity text-rose-500 text-lg leading-none">×</button>
+                  <div key={i} className="flex items-center justify-between p-3 bg-slate-950/50 rounded-2xl border border-slate-900 group">
+                    <span className="text-[10px] font-bold truncate pr-2">{m.filename}</span>
+                    <button onClick={() => deleteMaterial(m.filename)} className="opacity-0 group-hover:opacity-100 transition-opacity text-rose-500">×</button>
                   </div>
                 ))}
-                {materials.length === 0 && <div className="text-[9px] opacity-20 text-center py-4 italic uppercase tracking-widest">Empty</div>}
+                {materials.length === 0 && <div className="text-[10px] opacity-20 text-center py-4 uppercase tracking-widest">Empty</div>}
               </div>
             </section>
-
-            <div className="pt-4 border-t border-slate-900/50 space-y-2">
-              <section>
-                <h2 className="text-[9px] font-black uppercase tracking-[0.2em] mb-2 px-2 opacity-30">Tools</h2>
-                <div className="grid grid-cols-2 gap-2">
-                  <button 
-                    onClick={() => setActiveTab('quiz')}
-                    className={`py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'quiz' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-slate-950/30 border border-slate-900/50 hover:border-blue-500/30'}`}
-                  >
-                    <span>📝</span> Quiz
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('study')}
-                    className={`py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'study' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-slate-950/30 border border-slate-900/50 hover:border-blue-500/30'}`}
-                  >
-                    <span>🃏</span> Study
-                  </button>
-                </div>
-              </section>
-            </div>
           </div>
         </aside>
 
@@ -656,36 +645,53 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="px-8 py-6 flex flex-col items-center gap-4">
+      <footer className="px-8 py-8 flex flex-col items-center gap-6">
         {/* MacOS Action Dock */}
-        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/50 p-1.5 rounded-[2rem] flex items-center gap-1.5 shadow-2xl">
+        <div className="bg-slate-900/80 backdrop-blur-2xl border border-slate-800 p-2 rounded-[2.5rem] flex items-center gap-2 shadow-2xl">
           <button 
             onClick={() => setActiveTab('research')} 
-            className={`px-6 py-3 rounded-[1.5rem] text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2.5 ${activeTab === 'research' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10' : 'hover:bg-slate-800/50 text-slate-500'}`}
+            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'research' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
           >
             <span>🔍</span> Research
           </button>
           <button 
             onClick={() => setActiveTab('analysis')} 
-            className={`px-6 py-3 rounded-[1.5rem] text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2.5 ${activeTab === 'analysis' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10' : 'hover:bg-slate-800/50 text-slate-500'}`}
+            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'analysis' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
           >
             <span>🕸️</span> Graph
           </button>
-          <div className="w-[1px] h-6 bg-slate-800/50 mx-1" />
+          
+          <div className="w-[1px] h-8 bg-slate-800 mx-2" />
+          
+          <button 
+            onClick={() => setActiveTab('quiz')} 
+            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'quiz' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
+          >
+            <span>📝</span> Quiz
+          </button>
+          <button 
+            onClick={() => setActiveTab('study')} 
+            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'study' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
+          >
+            <span>🃏</span> Study
+          </button>
+
+          <div className="w-[1px] h-8 bg-slate-800 mx-2" />
+
           <button 
             onClick={handleAnalyze} 
             disabled={loading || materials.length === 0}
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-[1.5rem] text-[9px] font-black uppercase tracking-[0.2em] text-white transition-all flex items-center gap-2.5 shadow-lg shadow-indigo-600/10"
+            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all flex items-center gap-3 shadow-lg shadow-indigo-600/20"
           >
             <span>✨</span> {loading ? 'Analyzing...' : 'Deep Analysis'}
           </button>
           
           {error && (
-            <div className="flex items-center gap-3 ml-3 pr-3 border-l border-slate-800/50 pl-3">
-              <span className="text-[9px] font-bold text-rose-500/80 animate-pulse max-w-[150px] truncate">{error}</span>
+            <div className="flex items-center gap-3 ml-4 pr-4 border-l border-slate-800 pl-4">
+              <span className="text-[10px] font-bold text-rose-500 animate-pulse">{error}</span>
               <button 
                 onClick={() => checkBackend()} 
-                className="px-3 py-1.5 bg-slate-800/50 hover:bg-slate-700 rounded-lg text-[8px] font-black uppercase tracking-widest text-slate-400 transition-all"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-300 transition-all"
               >
                 Retry
               </button>
@@ -693,7 +699,7 @@ export default function Home() {
           )}
         </div>
 
-        <p className="text-[8px] font-black uppercase tracking-[0.3em] opacity-20">ScholarSync AI &copy; 2025 &bull; Research with Confidence</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest opacity-30">ScholarSync AI &copy; 2025 &bull; Research with Confidence</p>
       </footer>
 
       <style jsx global>{`
