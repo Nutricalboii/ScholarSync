@@ -8,8 +8,8 @@ import "katex/dist/katex.min.css";
 
 type Material = { filename: string };
 
-// Use local proxy to bypass CORS/SSL issues
-const backendUrl = "/api";
+// Use Render backend URL directly (no trailing slash)
+const backendUrl = "https://scholarsync-jh4j.onrender.com";
 
 export default function Home() {
   /* ================= SESSION ================= */
@@ -58,8 +58,8 @@ export default function Home() {
     setBackendStatus("checking");
     try {
       const controller = new AbortController();
-      // PATIENCE: 60s timeout for "Engine Wakeup" (Cold Start)
-      const timeoutId = setTimeout(() => controller.abort(), 60000); 
+      // PATIENCE: 90s timeout for "Engine Wakeup" (Cold Start)
+      const timeoutId = setTimeout(() => controller.abort(), 90000); 
 
       const res = await fetch(`${backendUrl}/`, {
         signal: controller.signal,
@@ -162,7 +162,7 @@ export default function Home() {
 
   useEffect(() => {
     checkBackend();
-    const interval = setInterval(checkBackend, 15000);
+    const interval = setInterval(checkBackend, 30000);
     return () => clearInterval(interval);
   }, [checkBackend]);
 
@@ -204,11 +204,8 @@ export default function Home() {
       }
 
       setFiles([]);
-      // Give the backend a moment to finish processing before refreshing the list
-      setTimeout(() => {
-        fetchMaterials();
-        fetchConcepts(true); // Force update graph after upload
-      }, 1000);
+      fetchMaterials();
+      fetchConcepts(true);
     } catch (e: any) {
       setError(e.message || "Upload failed");
     } finally {
@@ -227,7 +224,7 @@ export default function Home() {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s for query
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s for query
 
       const res = await fetch(`${backendUrl}/query`, {
         method: "POST",
@@ -283,8 +280,7 @@ export default function Home() {
     try {
       console.log("Starting Deep Analysis...");
       const controller = new AbortController();
-      // PATIENCE: 90s timeout for Deep Analysis on Render Free Tier
-      const timeoutId = setTimeout(() => controller.abort(), 90000); 
+      const timeoutId = setTimeout(() => controller.abort(), 120000); 
 
       const res = await fetch(`${backendUrl}/analyze`, {
         method: "POST",
@@ -336,10 +332,16 @@ export default function Home() {
     setCurrentQuestionIdx(0);
     setQuizScore(0);
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+
       const res = await fetch(`${backendUrl}/quiz`, {
         method: "POST",
         headers: { "X-Session-ID": sessionId },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         setQuizQuestions(data.questions || []);
@@ -458,7 +460,17 @@ export default function Home() {
           <div className="flex gap-4 items-center">
             <button onClick={() => setActiveTab('research')} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === 'research' ? 'bg-blue-600 text-white' : 'bg-slate-900/40 opacity-40 hover:opacity-100'}`}>Research</button>
             <button onClick={() => setActiveTab('analysis')} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === 'analysis' ? 'bg-blue-600 text-white' : 'bg-slate-900/40 opacity-40 hover:opacity-100'}`}>Graph</button>
-            {error && <span className="text-[10px] font-bold text-rose-500 animate-pulse">❌ {error}</span>}
+            {error && (
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-rose-500 animate-pulse">❌ {error}</span>
+                <button 
+                  onClick={() => checkBackend()} 
+                  className="px-3 py-1 text-[10px] rounded-lg bg-slate-900/40 border border-slate-800 hover:border-blue-500 transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
             <button onClick={handleAnalyze} className="ml-auto px-8 py-3 bg-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all">Deep Analysis</button>
           </div>
 

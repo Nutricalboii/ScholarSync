@@ -1,3 +1,4 @@
+import time
 from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -16,7 +17,12 @@ app = FastAPI(title="ScholarSync API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://scholar-sync.vercel.app",
+        "https://scholarsync.vercel.app",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -74,6 +80,13 @@ class QuizQuestion(BaseModel):
 
 class QuizResponse(BaseModel):
     questions: List[QuizQuestion]
+
+class StudyCard(BaseModel):
+    front: str
+    back: str
+
+class StudyResponse(BaseModel):
+    flashcards: List[StudyCard]
 
 # ================= ROUTES =================
 
@@ -143,18 +156,19 @@ async def delete_file(filename: str, x_session_id: Optional[str] = Header(None))
 @app.post("/concepts", response_model=ConceptsResponse)
 async def get_concepts(x_session_id: Optional[str] = Header(None)):
     session_id = x_session_id or "default_user"
-    # REDUCED: n_results to 5 for memory safety on free tier
-    results = vector_store.query(session_id, "Key technical concepts and definitions", n_results=5)
+    # REDUCED: n_results to 6 for memory safety
+    results = vector_store.query(session_id, "Key technical concepts and definitions", n_results=6)
     docs = results.get("documents", [[]])[0]
     
     if not docs:
         return ConceptsResponse(concepts=[], links=[])
 
-    # TRUNCATE: Limit context to 15,000 chars for faster response
+    # TRUNCATE: Limit context to 15,000 chars
     full_context = "\n\n".join(docs)
     if len(full_context) > 15000:
         full_context = full_context[:15000] + "... (truncated)"
 
+    time.sleep(2) # Rate limit protection
     instruction = "Extract key technical terms. Return JSON with 'concepts' list (term, definition, importance 1-10) and 'links' list (source, target)."
     raw = get_structured_response(instruction, full_context)
     
@@ -195,18 +209,19 @@ async def query_materials(
 @app.post("/analyze", response_model=AnalysisResponse)
 async def analyze(x_session_id: Optional[str] = Header(None)):
     session_id = x_session_id or "default_user"
-    # OPTIMIZED: n_results is 5
-    results = vector_store.query(session_id, "Provide a comprehensive summary and analysis of the main topics and key findings across all documents.", n_results=5)
+    # OPTIMIZED: n_results is 6
+    results = vector_store.query(session_id, "Provide a comprehensive summary and analysis of the main topics and key findings across all documents.", n_results=6)
     docs = results.get("documents", [[]])[0]
 
     if not docs:
         raise HTTPException(400, "No material to analyze. Please upload documents first.")
 
-    # TRUNCATE: Limit context to 15,000 chars for maximum speed on free tier
+    # TRUNCATE: Limit context to 15,000 chars
     full_context = "\n\n".join(docs)
     if len(full_context) > 15000:
         full_context = full_context[:15000] + "... (truncated for speed)"
 
+    time.sleep(2) # Rate limit protection
     # Ensure gemini-1.5-flash-latest is used (via get_structured_response)
     raw = get_structured_response(
         "Analyze the provided context. Return a JSON object with three fields: 'analysis' (a detailed string), 'learning_path' (a list of 5 progressive steps to master the content), and 'connections' (a list of 3-5 links between different topics).",
@@ -228,8 +243,8 @@ async def analyze(x_session_id: Optional[str] = Header(None)):
 @app.post("/quiz", response_model=QuizResponse)
 async def generate_quiz(x_session_id: Optional[str] = Header(None)):
     session_id = x_session_id or "default_user"
-    # REDUCED: n_results to 5 for memory safety
-    results = vector_store.query(session_id, "Key technical facts, concepts, and assessment-worthy details.", n_results=5)
+    # REDUCED: n_results to 6
+    results = vector_store.query(session_id, "Key technical facts, concepts, and assessment-worthy details.", n_results=6)
     docs = results.get("documents", [[]])[0]
     
     if not docs:
@@ -240,6 +255,7 @@ async def generate_quiz(x_session_id: Optional[str] = Header(None)):
     if len(full_context) > 15000:
         full_context = full_context[:15000] + "..."
 
+    time.sleep(2) # Rate limit protection
     instruction = """Generate a technical quiz based on the context. 
     Return a JSON object with a 'questions' list. 
     Each question must have: 'question' (string), 'options' (list of 4 strings), and 'correct_answer' (integer index 0-3).
@@ -254,5 +270,35 @@ async def generate_quiz(x_session_id: Optional[str] = Header(None)):
         print(f"Quiz Parse Error: {str(e)}")
         raise HTTPException(500, "Failed to generate structured quiz.")
 
+@app.post("/study", response_model=StudyResponse)
+async def generate_study_cards(x_session_id: Optional[str] = Header(None)):
+    session_id = x_session_id or "default_user"
+    # REDUCED: n_results to 6
+    results = vector_store.query(session_id, "Key definitions, technical terms, and core concepts for flashcards.", n_results=6)
+    docs = results.get("documents", [[]])[0]
+    
+    if not docs:
+        raise HTTPException(400, "No material found. Please upload documents first.")
+
+    full_context = "\n\n".join(docs)
+    if len(full_context) > 15000:
+        full_context = full_context[:15000] + "..."
+
+    time.sleep(2) # Rate limit protection
+    instruction = """Generate 8 technical flashcards for spaced repetition study. 
+    Return a JSON object with a 'flashcards' list. 
+    Each card must have: 'front' (concept/question) and 'back' (concise explanation/answer)."""
+    
+    raw = get_structured_response(instruction, full_context)
+    
+    try:
+        data = json.loads(clean_json_string(raw))
+        return StudyResponse(flashcards=data.get("flashcards", []))
+    except Exception as e:
+        print(f"Study Parse Error: {str(e)}")
+        raise HTTPException(500, "Failed to generate structured study cards.")
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    # Ensure port is an integer and defaults to 10000
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
