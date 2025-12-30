@@ -71,14 +71,14 @@ export default function Home() {
         setError("");
       } else {
         setBackendStatus("offline");
-        setError("Engine is warming up. Please wait...");
+        setError("Engine is warming up. Please wait 30-60 seconds...");
       }
     } catch (err: any) {
       setBackendStatus("offline");
       if (err.name === 'AbortError') {
-        setError("Engine wake-up timed out. Please try again.");
+        setError("Engine wake-up timed out. Click 'Retry' to try again.");
       } else {
-        setError("System Error: Failed to reach engine.");
+        setError("System Offline: Connecting to engine...");
       }
     }
   }, []);
@@ -456,24 +456,7 @@ export default function Home() {
         </aside>
 
         {/* Main Content */}
-        <div className="col-span-9 flex flex-col gap-6 overflow-hidden">
-          <div className="flex gap-4 items-center">
-            <button onClick={() => setActiveTab('research')} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === 'research' ? 'bg-blue-600 text-white' : 'bg-slate-900/40 opacity-40 hover:opacity-100'}`}>Research</button>
-            <button onClick={() => setActiveTab('analysis')} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === 'analysis' ? 'bg-blue-600 text-white' : 'bg-slate-900/40 opacity-40 hover:opacity-100'}`}>Graph</button>
-            {error && (
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-rose-500 animate-pulse">❌ {error}</span>
-                <button 
-                  onClick={() => checkBackend()} 
-                  className="px-3 py-1 text-[10px] rounded-lg bg-slate-900/40 border border-slate-800 hover:border-blue-500 transition-colors"
-                >
-                  Retry
-                </button>
-              </div>
-            )}
-            <button onClick={handleAnalyze} className="ml-auto px-8 py-3 bg-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all">Deep Analysis</button>
-          </div>
-
+        <div className="col-span-9 flex flex-col gap-6 overflow-hidden relative">
           <div className={`flex-1 rounded-[3rem] overflow-hidden ${isDark ? "bg-slate-900/20 border border-slate-900" : "bg-white shadow-2xl shadow-slate-200/50"}`}>
             {activeTab === 'research' ? (
               <div className="h-full flex flex-col p-8">
@@ -671,7 +654,43 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="px-10 py-6 border-t border-slate-900/50 text-center">
+      <footer className="px-10 py-8 flex flex-col items-center gap-6">
+        {/* MacOS Action Dock */}
+        <div className="bg-slate-900/80 backdrop-blur-2xl border border-slate-800 p-2 rounded-[2.5rem] flex items-center gap-2 shadow-2xl">
+          <button 
+            onClick={() => setActiveTab('research')} 
+            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'research' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
+          >
+            <span>🔍</span> Research
+          </button>
+          <button 
+            onClick={() => setActiveTab('analysis')} 
+            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'analysis' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
+          >
+            <span>🕸️</span> Graph
+          </button>
+          <div className="w-[1px] h-8 bg-slate-800 mx-2" />
+          <button 
+            onClick={handleAnalyze} 
+            disabled={loading || materials.length === 0}
+            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all flex items-center gap-3 shadow-lg shadow-indigo-600/20"
+          >
+            <span>✨</span> {loading ? 'Analyzing...' : 'Deep Analysis'}
+          </button>
+          
+          {error && (
+            <div className="flex items-center gap-3 ml-4 pr-4 border-l border-slate-800 pl-4">
+              <span className="text-[10px] font-bold text-rose-500 animate-pulse">{error}</span>
+              <button 
+                onClick={() => checkBackend()} 
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-300 transition-all"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+        </div>
+
         <p className="text-[10px] font-bold uppercase tracking-widest opacity-30">ScholarSync AI &copy; 2025 &bull; Research with Confidence</p>
       </footer>
 
