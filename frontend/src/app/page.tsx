@@ -52,17 +52,13 @@ export default function Home() {
   const [quizFinished, setQuizFinished] = useState(false);
   const [quizLoading, setQuizLoading] = useState(false);
 
-  /* ================= BACKEND ================= */
-  useEffect(() => {
-    checkBackend();
-    const interval = setInterval(() => {
-      if (backendStatus !== 'online') {
-        checkBackend();
-      }
-    }, 20000); // Heartbeat ping every 20s
-    return () => clearInterval(interval);
-  }, [backendStatus, checkBackend]);
+  /* ================= STUDY STATE ================= */
+  const [flashcards, setFlashcards] = useState<any[]>([]);
+  const [studyLoading, setStudyLoading] = useState(false);
+  const [currentCardIdx, setCurrentCardIdx] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
 
+  /* ================= BACKEND ================= */
   const checkBackend = useCallback(async () => {
     setBackendStatus("checking");
     try {
@@ -91,6 +87,16 @@ export default function Home() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    checkBackend();
+    const interval = setInterval(() => {
+      if (backendStatus !== 'online') {
+        checkBackend();
+      }
+    }, 20000); // Heartbeat ping every 20s
+    return () => clearInterval(interval);
+  }, [backendStatus, checkBackend]);
 
   const fetchMaterials = useCallback(async () => {
     try {
@@ -169,11 +175,6 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    checkBackend();
-    const interval = setInterval(checkBackend, 30000);
-    return () => clearInterval(interval);
-  }, [checkBackend]);
 
   useEffect(() => {
     fetchMaterials();
@@ -373,6 +374,39 @@ export default function Home() {
       setCurrentQuestionIdx(i => i + 1);
     } else {
       setQuizFinished(true);
+    }
+  };
+
+  const handleStartStudy = async () => {
+    if (materials.length === 0) {
+      setError("Please upload materials to generate flashcards.");
+      return;
+    }
+    setStudyLoading(true);
+    setFlashcards([]);
+    setCurrentCardIdx(0);
+    setIsFlipped(false);
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+      const res = await fetch(`${backendUrl}/study`, {
+        method: "POST",
+        headers: { "X-Session-ID": sessionId },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        setFlashcards(data.flashcards || []);
+      } else {
+        setError("Failed to generate flashcards.");
+      }
+    } catch {
+      setError("Connection error during study generation.");
+    } finally {
+      setStudyLoading(false);
     }
   };
 
@@ -634,11 +668,92 @@ export default function Home() {
                   )}
                 </div>
               </div>
+            ) : activeTab === 'study' ? (
+              <div className="h-full flex flex-col p-8 bg-[#020617] relative overflow-hidden">
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                     style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+                
+                <div className="flex-1 flex flex-col items-center justify-center relative z-10 max-w-2xl mx-auto w-full">
+                  {flashcards.length === 0 ? (
+                    <div className="text-center space-y-8">
+                      <div className="relative inline-block">
+                        <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full"></div>
+                        <div className="text-7xl relative">🃏</div>
+                      </div>
+                      <div className="space-y-4">
+                        <h2 className="text-xl font-black uppercase tracking-[0.4em] text-blue-500">Flashcard Engine</h2>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest max-w-xs mx-auto leading-relaxed">
+                          Generate interactive 3D flashcards to master complex concepts through active recall.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={handleStartStudy}
+                        disabled={studyLoading || materials.length === 0}
+                        className="px-12 py-4 bg-blue-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-blue-700 transition-all shadow-2xl shadow-blue-600/20 active:scale-95 disabled:opacity-50"
+                      >
+                        {studyLoading ? "Forging Cards..." : "Initialize Study Session"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-full space-y-12">
+                      <div className="flex justify-between items-center">
+                        <div className="space-y-1">
+                          <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Card {currentCardIdx + 1} of {flashcards.length}</span>
+                          <div className="flex gap-1">
+                            {flashcards.map((_, i) => (
+                              <div key={i} className={`w-6 h-1 rounded-full ${i === currentCardIdx ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : i < currentCardIdx ? 'bg-emerald-500/50' : 'bg-slate-800'}`}></div>
+                            ))}
+                          </div>
+                        </div>
+                        <button onClick={() => setFlashcards([])} className="text-[9px] font-black text-slate-500 uppercase tracking-widest hover:text-rose-500 transition-colors">Reset</button>
+                      </div>
+
+                      <div className="perspective-1000 w-full h-[400px]">
+                        <div 
+                          className={`flashcard-inner relative w-full h-full cursor-pointer ${isFlipped ? 'flashcard-flipped' : ''}`}
+                          onClick={() => setIsFlipped(!isFlipped)}
+                        >
+                          {/* Front */}
+                          <div className={`flashcard-front absolute inset-0 bg-slate-900/40 border border-slate-800 rounded-[3rem] p-12 flex flex-col items-center justify-center text-center backdrop-blur-sm backface-hidden`}>
+                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-8">Question</span>
+                            <h3 className="text-2xl font-bold text-slate-200 leading-relaxed">{flashcards[currentCardIdx].front}</h3>
+                            <div className="mt-12 text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] animate-pulse">Click to Reveal</div>
+                          </div>
+
+                          {/* Back */}
+                          <div className={`flashcard-back absolute inset-0 bg-blue-600 border border-blue-500 rounded-[3rem] p-12 flex flex-col items-center justify-center text-center backface-hidden`}>
+                            <span className="text-[10px] font-black text-blue-100 uppercase tracking-[0.4em] mb-8">Answer</span>
+                            <p className="text-xl font-bold text-white leading-relaxed">{flashcards[currentCardIdx].back}</p>
+                            <div className="mt-12 text-[9px] font-bold text-blue-200 uppercase tracking-[0.2em]">Click to flip back</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-center gap-6">
+                        <button 
+                          disabled={currentCardIdx === 0}
+                          onClick={() => { setCurrentCardIdx(i => i - 1); setIsFlipped(false); }}
+                          className="px-8 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:border-blue-500 transition-all disabled:opacity-20"
+                        >
+                          Previous
+                        </button>
+                        <button 
+                          disabled={currentCardIdx === flashcards.length - 1}
+                          onClick={() => { setCurrentCardIdx(i => i + 1); setIsFlipped(false); }}
+                          className="px-8 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:border-blue-500 transition-all disabled:opacity-20"
+                        >
+                          Next Card
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             ) : (
               <div className="h-full flex items-center justify-center p-8 text-center opacity-40 flex-col gap-6">
-                <div className="text-6xl">🃏</div>
-                <h3 className="text-sm font-black uppercase tracking-[0.4em]">Flashcards Coming Soon</h3>
-                <p className="text-[10px] font-bold max-w-xs leading-relaxed opacity-50">Your personal spaced-repetition deck is being built by the analysis engine.</p>
+                <div className="text-6xl">✨</div>
+                <h3 className="text-sm font-black uppercase tracking-[0.4em]">Initialize Analysis</h3>
+                <p className="text-[10px] font-bold max-w-xs leading-relaxed opacity-50">Upload documents and run 'Deep Analysis' to populate the knowledge graph.</p>
               </div>
             )}
           </div>
