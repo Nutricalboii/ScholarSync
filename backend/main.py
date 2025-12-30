@@ -67,6 +67,14 @@ class ConceptsResponse(BaseModel):
     concepts: List[ConceptItem]
     links: List[dict] = []
 
+class QuizQuestion(BaseModel):
+    question: str
+    options: List[str]
+    correct_answer: int # Index of the correct option
+
+class QuizResponse(BaseModel):
+    questions: List[QuizQuestion]
+
 # ================= ROUTES =================
 
 @app.get("/")
@@ -216,6 +224,35 @@ async def analyze(x_session_id: Optional[str] = Header(None)):
             learning_path=["Review uploaded documents"],
             connections=["Main content"]
         )
+
+@app.post("/quiz", response_model=QuizResponse)
+async def generate_quiz(x_session_id: Optional[str] = Header(None)):
+    session_id = x_session_id or "default_user"
+    # REDUCED: n_results to 5 for memory safety
+    results = vector_store.query(session_id, "Key technical facts, concepts, and assessment-worthy details.", n_results=5)
+    docs = results.get("documents", [[]])[0]
+    
+    if not docs:
+        raise HTTPException(400, "No material found. Please upload documents first.")
+
+    # TRUNCATE: Limit context to 15,000 chars
+    full_context = "\n\n".join(docs)
+    if len(full_context) > 15000:
+        full_context = full_context[:15000] + "..."
+
+    instruction = """Generate a technical quiz based on the context. 
+    Return a JSON object with a 'questions' list. 
+    Each question must have: 'question' (string), 'options' (list of 4 strings), and 'correct_answer' (integer index 0-3).
+    Create 5 challenging questions."""
+    
+    raw = get_structured_response(instruction, full_context)
+    
+    try:
+        data = json.loads(clean_json_string(raw))
+        return QuizResponse(questions=data.get("questions", []))
+    except Exception as e:
+        print(f"Quiz Parse Error: {str(e)}")
+        raise HTTPException(500, "Failed to generate structured quiz.")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))

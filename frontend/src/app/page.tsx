@@ -44,6 +44,14 @@ export default function Home() {
   const [activeTab, setActiveTab] =
     useState<"research" | "analysis" | "quiz" | "study">("research");
 
+  /* ================= QUIZ STATE ================= */
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+  const [quizScore, setQuizScore] = useState(0);
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [quizFinished, setQuizFinished] = useState(false);
+  const [quizLoading, setQuizLoading] = useState(false);
+
   /* ================= BACKEND ================= */
 
   const checkBackend = useCallback(async () => {
@@ -321,6 +329,42 @@ export default function Home() {
     }
   };
 
+  const handleStartQuiz = async () => {
+    setQuizLoading(true);
+    setQuizStarted(false);
+    setQuizFinished(false);
+    setCurrentQuestionIdx(0);
+    setQuizScore(0);
+    try {
+      const res = await fetch(`${backendUrl}/quiz`, {
+        method: "POST",
+        headers: { "X-Session-ID": sessionId },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setQuizQuestions(data.questions || []);
+        setQuizStarted(true);
+      } else {
+        setError("Failed to generate quiz. Try again.");
+      }
+    } catch {
+      setError("Connection error during quiz generation.");
+    } finally {
+      setQuizLoading(false);
+    }
+  };
+
+  const handleAnswer = (idx: number) => {
+    if (idx === quizQuestions[currentQuestionIdx].correct_answer) {
+      setQuizScore(s => s + 1);
+    }
+    if (currentQuestionIdx < quizQuestions.length - 1) {
+      setCurrentQuestionIdx(i => i + 1);
+    } else {
+      setQuizFinished(true);
+    }
+  };
+
   /* ================= UI ================= */
 
   return (
@@ -518,10 +562,91 @@ export default function Home() {
                 </div>
               </div>
             ) : activeTab === 'quiz' ? (
-              <div className="h-full flex items-center justify-center p-8 text-center opacity-40 flex-col gap-6">
-                <div className="text-6xl">📝</div>
-                <h3 className="text-sm font-black uppercase tracking-[0.4em]">Quiz Engine Coming Soon</h3>
-                <p className="text-[10px] font-bold max-w-xs leading-relaxed opacity-50">We are currently calibrating the AI to generate precise questions from your library.</p>
+              <div className="h-full flex flex-col p-8 bg-[#020617] relative overflow-hidden">
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                     style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+                
+                <div className="flex-1 flex flex-col items-center justify-center relative z-10 max-w-2xl mx-auto w-full">
+                  {!quizStarted && !quizFinished ? (
+                    <div className="text-center space-y-8">
+                      <div className="relative inline-block">
+                        <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full"></div>
+                        <div className="text-7xl relative">📝</div>
+                      </div>
+                      <div className="space-y-4">
+                        <h2 className="text-xl font-black uppercase tracking-[0.4em] text-blue-500">Knowledge Assessment</h2>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest max-w-xs mx-auto leading-relaxed">
+                          Generate a dynamic quiz based on your uploaded library to test your technical mastery.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={handleStartQuiz}
+                        disabled={quizLoading || materials.length === 0}
+                        className="px-12 py-4 bg-blue-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-blue-700 transition-all shadow-2xl shadow-blue-600/20 active:scale-95 disabled:opacity-50"
+                      >
+                        {quizLoading ? "Calibrating Questions..." : "Initialize Quiz"}
+                      </button>
+                    </div>
+                  ) : quizStarted && !quizFinished ? (
+                    <div className="w-full space-y-8">
+                      <div className="flex justify-between items-end">
+                        <div className="space-y-1">
+                          <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Question {currentQuestionIdx + 1} of {quizQuestions.length}</span>
+                          <div className="flex gap-1">
+                            {quizQuestions.map((_, i) => (
+                              <div key={i} className={`w-8 h-1 rounded-full ${i === currentQuestionIdx ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]' : i < currentQuestionIdx ? 'bg-emerald-500/50' : 'bg-slate-800'}`}></div>
+                            ))}
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Score: {quizScore}</span>
+                      </div>
+
+                      <div className="p-8 bg-slate-900/40 border border-slate-800 rounded-3xl backdrop-blur-sm">
+                        <h3 className="text-lg font-bold text-slate-200 mb-8 leading-relaxed">
+                          {quizQuestions[currentQuestionIdx].question}
+                        </h3>
+                        <div className="grid gap-4">
+                          {quizQuestions[currentQuestionIdx].options.map((opt: string, i: number) => (
+                            <button 
+                              key={i}
+                              onClick={() => handleAnswer(i)}
+                              className="w-full p-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-left text-xs font-bold hover:border-blue-500 hover:bg-blue-500/5 transition-all group flex items-center gap-4"
+                            >
+                              <span className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center text-[10px] text-slate-500 group-hover:text-blue-500 border border-slate-800 group-hover:border-blue-500/30">{String.fromCharCode(65 + i)}</span>
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center space-y-8">
+                      <div className="relative inline-block">
+                        <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full"></div>
+                        <div className="text-7xl relative">🏆</div>
+                      </div>
+                      <div className="space-y-4">
+                        <h2 className="text-xl font-black uppercase tracking-[0.4em] text-emerald-500">Assessment Complete</h2>
+                        <div className="flex justify-center gap-4">
+                          <div className="p-4 bg-slate-900/40 border border-slate-800 rounded-2xl">
+                            <div className="text-2xl font-black text-slate-200">{quizScore}/{quizQuestions.length}</div>
+                            <div className="text-[8px] font-black uppercase tracking-widest text-slate-500">Total Score</div>
+                          </div>
+                          <div className="p-4 bg-slate-900/40 border border-slate-800 rounded-2xl">
+                            <div className="text-2xl font-black text-slate-200">{Math.round((quizScore/quizQuestions.length)*100)}%</div>
+                            <div className="text-[8px] font-black uppercase tracking-widest text-slate-500">Mastery Rate</div>
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={handleStartQuiz}
+                        className="px-12 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:border-blue-500 transition-all active:scale-95"
+                      >
+                        Retake Assessment
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="h-full flex items-center justify-center p-8 text-center opacity-40 flex-col gap-6">
