@@ -2,11 +2,17 @@ import pypdf
 import io
 
 def extract_text_from_pdf(file_content: bytes) -> str:
-    """Extracts text from a PDF file provided as bytes."""
+    """Extracts text from a PDF file provided as bytes with memory safety."""
     try:
         pdf_reader = pypdf.PdfReader(io.BytesIO(file_content))
         text = ""
+        # LIMIT: Prevent extracting more than 100,000 characters per file to save RAM
+        char_limit = 100000 
+        
         for page in pdf_reader.pages:
+            if len(text) > char_limit:
+                print(f"DEBUG: Character limit reached for file. Truncating.")
+                break
             try:
                 extracted = page.extract_text()
                 if extracted:

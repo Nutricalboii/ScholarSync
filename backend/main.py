@@ -135,14 +135,20 @@ async def delete_file(filename: str, x_session_id: Optional[str] = Header(None))
 @app.post("/concepts", response_model=ConceptsResponse)
 async def get_concepts(x_session_id: Optional[str] = Header(None)):
     session_id = x_session_id or "default_user"
-    results = vector_store.query(session_id, "Key technical concepts and definitions", n_results=15)
+    # REDUCED: n_results to 5 for memory safety on free tier
+    results = vector_store.query(session_id, "Key technical concepts and definitions", n_results=5)
     docs = results.get("documents", [[]])[0]
     
     if not docs:
         return ConceptsResponse(concepts=[], links=[])
 
+    # TRUNCATE: Limit context to 15,000 chars for faster response
+    full_context = "\n\n".join(docs)
+    if len(full_context) > 15000:
+        full_context = full_context[:15000] + "... (truncated)"
+
     instruction = "Extract key technical terms. Return JSON with 'concepts' list (term, definition, importance 1-10) and 'links' list (source, target)."
-    raw = get_structured_response(instruction, "\n\n".join(docs))
+    raw = get_structured_response(instruction, full_context)
     
     try:
         data = json.loads(clean_json_string(raw))
@@ -181,17 +187,17 @@ async def query_materials(
 @app.post("/analyze", response_model=AnalysisResponse)
 async def analyze(x_session_id: Optional[str] = Header(None)):
     session_id = x_session_id or "default_user"
-    # Reduce n_results to 5 to prevent memory overload and speed up processing
+    # OPTIMIZED: n_results is 5
     results = vector_store.query(session_id, "Provide a comprehensive summary and analysis of the main topics and key findings across all documents.", n_results=5)
     docs = results.get("documents", [[]])[0]
 
     if not docs:
         raise HTTPException(400, "No material to analyze. Please upload documents first.")
 
-    # Truncate total context to 20,000 chars for maximum speed on free tier
+    # TRUNCATE: Limit context to 15,000 chars for maximum speed on free tier
     full_context = "\n\n".join(docs)
-    if len(full_context) > 20000:
-        full_context = full_context[:20000] + "... (truncated for speed)"
+    if len(full_context) > 15000:
+        full_context = full_context[:15000] + "... (truncated for speed)"
 
     # Ensure gemini-1.5-flash-latest is used (via get_structured_response)
     raw = get_structured_response(

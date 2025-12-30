@@ -50,6 +50,7 @@ export default function Home() {
     setBackendStatus("checking");
     try {
       const controller = new AbortController();
+      // PATIENCE: 60s timeout for "Engine Wakeup" (Cold Start)
       const timeoutId = setTimeout(() => controller.abort(), 60000); 
 
       const res = await fetch(`${backendUrl}/`, {
@@ -62,10 +63,15 @@ export default function Home() {
         setError("");
       } else {
         setBackendStatus("offline");
+        setError("Engine is warming up. Please wait...");
       }
-    } catch (err) {
+    } catch (err: any) {
       setBackendStatus("offline");
-      setError("System Error: Failed to reach engine.");
+      if (err.name === 'AbortError') {
+        setError("Engine wake-up timed out. Please try again.");
+      } else {
+        setError("System Error: Failed to reach engine.");
+      }
     }
   }, []);
 
@@ -269,7 +275,7 @@ export default function Home() {
     try {
       console.log("Starting Deep Analysis...");
       const controller = new AbortController();
-      // INCREASED: 90s timeout for deep multi-document analysis on Render free tier
+      // PATIENCE: 90s timeout for Deep Analysis on Render Free Tier
       const timeoutId = setTimeout(() => controller.abort(), 90000); 
 
       const res = await fetch(`${backendUrl}/analyze`, {
