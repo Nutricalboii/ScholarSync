@@ -714,14 +714,14 @@ export default function Home() {
                           onClick={() => setIsFlipped(!isFlipped)}
                         >
                           {/* Front */}
-                          <div className={`flashcard-front absolute inset-0 bg-slate-900/40 border border-slate-800 rounded-[3rem] p-12 flex flex-col items-center justify-center text-center backdrop-blur-sm backface-hidden`}>
+                          <div className={`flashcard-front absolute inset-0 bg-slate-900/40 border border-slate-800 rounded-[3rem] p-12 flex flex-col items-center justify-center text-center backdrop-blur-sm`}>
                             <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-8">Question</span>
                             <h3 className="text-2xl font-bold text-slate-200 leading-relaxed">{flashcards[currentCardIdx].front}</h3>
                             <div className="mt-12 text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] animate-pulse">Click to Reveal</div>
                           </div>
 
                           {/* Back */}
-                          <div className={`flashcard-back absolute inset-0 bg-blue-600 border border-blue-500 rounded-[3rem] p-12 flex flex-col items-center justify-center text-center backface-hidden`}>
+                          <div className={`flashcard-back absolute inset-0 bg-blue-600 border border-blue-500 rounded-[3rem] p-12 flex flex-col items-center justify-center text-center`}>
                             <span className="text-[10px] font-black text-blue-100 uppercase tracking-[0.4em] mb-8">Answer</span>
                             <p className="text-xl font-bold text-white leading-relaxed">{flashcards[currentCardIdx].back}</p>
                             <div className="mt-12 text-[9px] font-bold text-blue-200 uppercase tracking-[0.2em]">Click to flip back</div>
