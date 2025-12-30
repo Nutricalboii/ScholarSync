@@ -63,8 +63,8 @@ export default function Home() {
     setBackendStatus("checking");
     try {
       const controller = new AbortController();
-      // PATIENCE: 90s timeout for "Engine Wakeup" (Cold Start)
-      const timeoutId = setTimeout(() => controller.abort(), 90000); 
+      // PATIENCE: 120s timeout for "Engine Wakeup" (Cold Start)
+      const timeoutId = setTimeout(() => controller.abort(), 120000); 
 
       const res = await fetch(`${backendUrl}/`, {
         signal: controller.signal,
@@ -419,7 +419,7 @@ export default function Home() {
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/10">
             <span className="text-white font-black text-xs">S</span>
           </div>
-          <h1 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-70">ScholarSync <span className="text-blue-500">v1.1</span></h1>
+          <h1 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-70">ScholarSync <span className="text-blue-500">v1.0</span></h1>
         </div>
         
         <div className="flex items-center gap-4">
@@ -821,6 +821,10 @@ export default function Home() {
         .flashcard-inner {
           transform-style: preserve-3d;
           transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .flashcard-front, .flashcard-back {
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
         }
         .flashcard-back {
           transform: rotateY(180deg);
