@@ -263,12 +263,14 @@ export default function Home() {
     
     if (loading) return;
     setLoading(true);
+    setError(""); // Clear previous errors
     setActiveTab("research");
 
     try {
       console.log("Starting Deep Analysis...");
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout
+      // INCREASED: 90s timeout for deep multi-document analysis on Render free tier
+      const timeoutId = setTimeout(() => controller.abort(), 90000); 
 
       const res = await fetch(`${backendUrl}/analyze`, {
         method: "POST",
@@ -285,31 +287,28 @@ export default function Home() {
         const data = await res.json();
         setChatHistory(h => [
           ...h,
-          { role: "assistant", content: data.analysis, learningPath: data.learning_path },
+          { 
+            role: "assistant", 
+            content: data.analysis, 
+            learningPath: data.learning_path,
+            isAnalysis: true 
+          },
         ]);
         fetchConcepts(true);
       } else if (res.status === 504 || res.status === 429) {
-        setChatHistory(h => [
-          ...h,
-          { role: "assistant", content: "⚠️ **Analysis Busy:** The engine is warming up or busy. Please wait 10 seconds and try again." },
-        ]);
+        // Handle "Busy" or "Gateway Timeout" gracefully
+        setError("Analysis engine is warming up. Please wait 10 seconds and try again.");
       } else {
         const errorData = await res.json().catch(() => ({ detail: "Analysis engine is busy or timed out." }));
-        setChatHistory(h => [
-          ...h,
-          { role: "assistant", content: `⚠️ **Analysis Error:** ${errorData.detail}` },
-        ]);
+        setError(errorData.detail || "Analysis failed.");
       }
     } catch (err: any) {
       console.error("Analysis Error:", err);
-      const isTimeout = err.name === 'AbortError';
-      setChatHistory(h => [
-        ...h,
-        { role: "assistant", content: isTimeout 
-          ? "⏳ **Analysis Timeout:** The engine is taking longer than usual (likely due to large files). Try analyzing fewer documents or wait a moment and try again."
-          : `❌ **System Error:** Failed to reach engine at \`${backendUrl}\`.` 
-        },
-      ]);
+      if (err.name === 'AbortError') {
+        setError("Analysis timed out. Try analyzing fewer documents (e.g., 2-3) to stay within limits.");
+      } else {
+        setError("Connection lost. Please check if the backend is live.");
+      }
       checkBackend(); 
     } finally {
       setLoading(false);

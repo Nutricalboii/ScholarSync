@@ -181,18 +181,19 @@ async def query_materials(
 @app.post("/analyze", response_model=AnalysisResponse)
 async def analyze(x_session_id: Optional[str] = Header(None)):
     session_id = x_session_id or "default_user"
-    # Reduce n_results to prevent memory overload on free tier
+    # Reduce n_results to 5 to prevent memory overload and speed up processing
     results = vector_store.query(session_id, "Provide a comprehensive summary and analysis of the main topics and key findings across all documents.", n_results=5)
     docs = results.get("documents", [[]])[0]
 
     if not docs:
         raise HTTPException(400, "No material to analyze. Please upload documents first.")
 
-    # Truncate total context to 30,000 chars to avoid timeouts
+    # Truncate total context to 20,000 chars for maximum speed on free tier
     full_context = "\n\n".join(docs)
-    if len(full_context) > 30000:
-        full_context = full_context[:30000] + "... (truncated)"
+    if len(full_context) > 20000:
+        full_context = full_context[:20000] + "... (truncated for speed)"
 
+    # Ensure gemini-1.5-flash-latest is used (via get_structured_response)
     raw = get_structured_response(
         "Analyze the provided context. Return a JSON object with three fields: 'analysis' (a detailed string), 'learning_path' (a list of 5 progressive steps to master the content), and 'connections' (a list of 3-5 links between different topics).",
         full_context,
