@@ -371,93 +371,95 @@ export default function Home() {
 
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-500 ${isDark ? "bg-[#020617] text-slate-200" : "bg-slate-50 text-slate-900"}`}>
-      <header className="px-10 py-6 flex items-center justify-between border-b border-slate-900/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
-            <span className="text-white font-black">S</span>
+      <header className="px-8 py-4 flex items-center justify-between border-b border-slate-900/30 backdrop-blur-md sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/10">
+            <span className="text-white font-black text-xs">S</span>
           </div>
-          <h1 className="text-xs font-black uppercase tracking-[0.4em] opacity-80">ScholarSync <span className="text-blue-500">v1.1</span></h1>
+          <h1 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-70">ScholarSync <span className="text-blue-500">v1.1</span></h1>
         </div>
         
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <button 
             onClick={() => checkBackend()}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-full border border-slate-800 hover:border-blue-500 transition-colors group"
+            className="flex items-center gap-2 px-3 py-1.5 bg-slate-900/30 rounded-full border border-slate-800/50 hover:border-blue-500/30 transition-colors group"
           >
-            <div className={`w-2 h-2 rounded-full ${backendStatus === 'online' ? 'bg-emerald-500 animate-pulse' : backendStatus === 'checking' ? 'bg-amber-500 animate-bounce' : 'bg-rose-500'}`} />
-            <span className="text-[10px] font-bold uppercase tracking-widest opacity-50 group-hover:opacity-100">{backendStatus === 'online' ? 'Engine Live' : backendStatus === 'checking' ? 'Waking up...' : 'Reconnect'}</span>
+            <div className={`w-1.5 h-1.5 rounded-full ${backendStatus === 'online' ? 'bg-emerald-500 animate-pulse' : backendStatus === 'checking' ? 'bg-amber-500 animate-bounce' : 'bg-rose-500'}`} />
+            <span className="text-[8px] font-black uppercase tracking-[0.2em] opacity-40 group-hover:opacity-100">{backendStatus === 'online' ? 'Engine Live' : backendStatus === 'checking' ? 'Waking up...' : 'Reconnect'}</span>
           </button>
-          <button onClick={() => setIsDark(!isDark)} className="p-2 hover:bg-slate-800 rounded-xl transition-colors">{isDark ? "🌙" : "☀️"}</button>
+          <button onClick={() => setIsDark(!isDark)} className="p-1.5 hover:bg-slate-800 rounded-lg transition-colors text-xs">{isDark ? "🌙" : "☀️"}</button>
         </div>
       </header>
 
-      <main className="flex-1 grid grid-cols-12 gap-8 p-10 overflow-hidden">
+      <main className="flex-1 grid grid-cols-12 gap-6 p-6 overflow-hidden">
         {/* Sidebar */}
-        <aside className="col-span-3 space-y-6 overflow-y-auto custom-scrollbar pr-4">
-          <section className={`p-6 rounded-[2.5rem] ${isDark ? "bg-slate-900/40 border border-slate-900" : "bg-white shadow-xl shadow-slate-200/50"}`}>
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-6 opacity-30">Vault</h2>
-            <form onSubmit={handleUpload} className="relative isolate space-y-4">
-              <div className="relative border-2 border-dashed border-slate-800 rounded-3xl p-8 text-center hover:border-blue-500 transition-colors cursor-pointer group">
-                <input 
-                  type="file" 
-                  multiple 
-                  accept=".pdf" 
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFiles(Array.from(e.target.files || []))} 
-                  className="absolute inset-0 opacity-0 cursor-pointer z-[5]" 
-                />
-                <div className="text-2xl mb-2 group-hover:scale-110 transition-transform">☁️</div>
-                <div className="text-[10px] font-bold opacity-40 uppercase tracking-wider">{files.length > 0 ? `${files.length} Selected` : 'Drop PDFs'}</div>
-              </div>
-              <button 
-                type="submit"
-                disabled={files.length === 0 || uploading} 
-                className="relative z-[50] w-full py-4 bg-blue-600 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-blue-700 disabled:opacity-50 transition-all shadow-2xl shadow-blue-600/20 active:scale-95"
-              >
-                {uploading ? "Processing..." : "Sync"}
-              </button>
-            </form>
-          </section>
-
-          <section className={`p-6 rounded-[2.5rem] ${isDark ? "bg-slate-900/40 border border-slate-900" : "bg-white shadow-xl shadow-slate-200/50"}`}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Library</h2>
-              <button onClick={clearMaterials} className="text-rose-500 hover:scale-110 transition-transform">🗑️</button>
-            </div>
-            <div className="space-y-2">
-              {materials.map((m, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-slate-950/50 rounded-2xl border border-slate-900 group">
-                  <span className="text-[10px] font-bold truncate pr-2">{m.filename}</span>
-                  <button onClick={() => deleteMaterial(m.filename)} className="opacity-0 group-hover:opacity-100 transition-opacity text-rose-500">×</button>
+        <aside className="col-span-3 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
+          <div className={`flex-1 flex flex-col gap-4 p-4 rounded-[2rem] ${isDark ? "bg-slate-900/20 border border-slate-900" : "bg-white shadow-xl shadow-slate-200/50"}`}>
+            <section>
+              <h2 className="text-[9px] font-black uppercase tracking-[0.2em] mb-4 px-2 opacity-30">Vault</h2>
+              <form onSubmit={handleUpload} className="relative isolate space-y-3">
+                <div className="relative border-2 border-dashed border-slate-800/50 rounded-2xl p-6 text-center hover:border-blue-500/50 transition-colors cursor-pointer group">
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept=".pdf" 
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFiles(Array.from(e.target.files || []))} 
+                    className="absolute inset-0 opacity-0 cursor-pointer z-[5]" 
+                  />
+                  <div className="text-xl mb-1 group-hover:scale-110 transition-transform">☁️</div>
+                  <div className="text-[9px] font-bold opacity-40 uppercase tracking-wider">{files.length > 0 ? `${files.length} Selected` : 'Drop PDFs'}</div>
                 </div>
-              ))}
-              {materials.length === 0 && <div className="text-[10px] opacity-20 text-center py-4">Empty</div>}
+                <button 
+                  type="submit"
+                  disabled={files.length === 0 || uploading} 
+                  className="relative z-[50] w-full py-3 bg-blue-600 rounded-xl font-black text-[9px] uppercase tracking-[0.3em] hover:bg-blue-700 disabled:opacity-50 transition-all shadow-lg shadow-blue-600/10 active:scale-95"
+                >
+                  {uploading ? "Processing..." : "Sync"}
+                </button>
+              </form>
+            </section>
+
+            <section className="flex-1 flex flex-col min-h-0">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <h2 className="text-[9px] font-black uppercase tracking-[0.2em] opacity-30">Library</h2>
+                <button onClick={clearMaterials} className="text-rose-500 hover:scale-110 transition-transform text-xs">🗑️</button>
+              </div>
+              <div className="space-y-1 overflow-y-auto custom-scrollbar pr-1">
+                {materials.map((m, i) => (
+                  <div key={i} className="flex items-center justify-between p-2.5 bg-slate-950/30 rounded-xl border border-slate-900/50 group">
+                    <span className="text-[9px] font-bold truncate pr-2 opacity-70">{m.filename}</span>
+                    <button onClick={() => deleteMaterial(m.filename)} className="opacity-0 group-hover:opacity-100 transition-opacity text-rose-500 text-lg leading-none">×</button>
+                  </div>
+                ))}
+                {materials.length === 0 && <div className="text-[9px] opacity-20 text-center py-4 italic uppercase tracking-widest">Empty</div>}
+              </div>
+            </section>
+
+            <div className="pt-4 border-t border-slate-900/50 space-y-2">
+              <section>
+                <h2 className="text-[9px] font-black uppercase tracking-[0.2em] mb-2 px-2 opacity-30">Tools</h2>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => setActiveTab('quiz')}
+                    className={`py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'quiz' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-slate-950/30 border border-slate-900/50 hover:border-blue-500/30'}`}
+                  >
+                    <span>📝</span> Quiz
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('study')}
+                    className={`py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'study' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-slate-950/30 border border-slate-900/50 hover:border-blue-500/30'}`}
+                  >
+                    <span>🃏</span> Study
+                  </button>
+                </div>
+              </section>
             </div>
-          </section>
-
-          <section className={`p-6 rounded-[2.5rem] ${isDark ? "bg-slate-900/40 border border-slate-900" : "bg-white shadow-xl shadow-slate-200/50"}`}>
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-30">Quiz</h2>
-            <button 
-              onClick={() => setActiveTab('quiz')}
-              className={`w-full py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'quiz' ? 'bg-blue-600 text-white' : 'bg-slate-950/50 border border-slate-900 hover:border-blue-500'}`}
-            >
-              <span>📝</span> Self Test
-            </button>
-          </section>
-
-          <section className={`p-6 rounded-[2.5rem] ${isDark ? "bg-slate-900/40 border border-slate-900" : "bg-white shadow-xl shadow-slate-200/50"}`}>
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-30">Study</h2>
-            <button 
-              onClick={() => setActiveTab('study')}
-              className={`w-full py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'study' ? 'bg-blue-600 text-white' : 'bg-slate-950/50 border border-slate-900 hover:border-blue-500'}`}
-            >
-              <span>🃏</span> Flashcards
-            </button>
-          </section>
+          </div>
         </aside>
 
         {/* Main Content */}
-        <div className="col-span-9 flex flex-col gap-6 overflow-hidden relative">
-          <div className={`flex-1 rounded-[3rem] overflow-hidden ${isDark ? "bg-slate-900/20 border border-slate-900" : "bg-white shadow-2xl shadow-slate-200/50"}`}>
+        <div className="col-span-9 flex flex-col gap-4 overflow-hidden relative">
+          <div className={`flex-1 rounded-[2.5rem] overflow-hidden ${isDark ? "bg-slate-900/10 border border-slate-900/50" : "bg-white shadow-2xl shadow-slate-200/50"}`}>
             {activeTab === 'research' ? (
               <div className="h-full flex flex-col p-8">
                 <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 pr-4 mb-6">
@@ -493,9 +495,9 @@ export default function Home() {
                   ))}
                   {loading && <div className="animate-pulse flex gap-2"><div className="w-2 h-2 bg-blue-600 rounded-full" /><div className="w-2 h-2 bg-blue-600 rounded-full" /><div className="w-2 h-2 bg-blue-600 rounded-full" /></div>}
                 </div>
-                <form onSubmit={handleQuery} className="relative">
-                  <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ask anything about your materials..." className="w-full py-6 px-8 bg-slate-950/50 border border-slate-800 rounded-[2rem] text-sm focus:outline-none focus:border-blue-500 transition-all" />
-                  <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">🏹</button>
+                <form onSubmit={handleQuery} className="relative mt-auto pt-4">
+                  <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ask anything about your materials..." className="w-full py-4 px-6 bg-slate-950/30 border border-slate-800/50 rounded-2xl text-xs focus:outline-none focus:border-blue-500/50 transition-all" />
+                  <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all">🏹</button>
                 </form>
               </div>
             ) : activeTab === 'analysis' ? (
@@ -654,36 +656,36 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="px-10 py-8 flex flex-col items-center gap-6">
+      <footer className="px-8 py-6 flex flex-col items-center gap-4">
         {/* MacOS Action Dock */}
-        <div className="bg-slate-900/80 backdrop-blur-2xl border border-slate-800 p-2 rounded-[2.5rem] flex items-center gap-2 shadow-2xl">
+        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/50 p-1.5 rounded-[2rem] flex items-center gap-1.5 shadow-2xl">
           <button 
             onClick={() => setActiveTab('research')} 
-            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'research' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
+            className={`px-6 py-3 rounded-[1.5rem] text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2.5 ${activeTab === 'research' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10' : 'hover:bg-slate-800/50 text-slate-500'}`}
           >
             <span>🔍</span> Research
           </button>
           <button 
             onClick={() => setActiveTab('analysis')} 
-            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'analysis' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
+            className={`px-6 py-3 rounded-[1.5rem] text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2.5 ${activeTab === 'analysis' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10' : 'hover:bg-slate-800/50 text-slate-500'}`}
           >
             <span>🕸️</span> Graph
           </button>
-          <div className="w-[1px] h-8 bg-slate-800 mx-2" />
+          <div className="w-[1px] h-6 bg-slate-800/50 mx-1" />
           <button 
             onClick={handleAnalyze} 
             disabled={loading || materials.length === 0}
-            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all flex items-center gap-3 shadow-lg shadow-indigo-600/20"
+            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-[1.5rem] text-[9px] font-black uppercase tracking-[0.2em] text-white transition-all flex items-center gap-2.5 shadow-lg shadow-indigo-600/10"
           >
             <span>✨</span> {loading ? 'Analyzing...' : 'Deep Analysis'}
           </button>
           
           {error && (
-            <div className="flex items-center gap-3 ml-4 pr-4 border-l border-slate-800 pl-4">
-              <span className="text-[10px] font-bold text-rose-500 animate-pulse">{error}</span>
+            <div className="flex items-center gap-3 ml-3 pr-3 border-l border-slate-800/50 pl-3">
+              <span className="text-[9px] font-bold text-rose-500/80 animate-pulse max-w-[150px] truncate">{error}</span>
               <button 
                 onClick={() => checkBackend()} 
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-300 transition-all"
+                className="px-3 py-1.5 bg-slate-800/50 hover:bg-slate-700 rounded-lg text-[8px] font-black uppercase tracking-widest text-slate-400 transition-all"
               >
                 Retry
               </button>
@@ -691,7 +693,7 @@ export default function Home() {
           )}
         </div>
 
-        <p className="text-[10px] font-bold uppercase tracking-widest opacity-30">ScholarSync AI &copy; 2025 &bull; Research with Confidence</p>
+        <p className="text-[8px] font-black uppercase tracking-[0.3em] opacity-20">ScholarSync AI &copy; 2025 &bull; Research with Confidence</p>
       </footer>
 
       <style jsx global>{`
