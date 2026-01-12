@@ -431,7 +431,7 @@ export default function Home() {
   /* ================= UI ================= */
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-500 ${isDark ? "bg-[#020617] text-slate-200" : "bg-slate-50 text-slate-900"}`}>
+    <div className={`h-screen flex flex-col overflow-hidden font-sans transition-colors duration-500 ${isDark ? "bg-[#020617] text-slate-200" : "bg-slate-50 text-slate-900"}`}>
       <header className="px-8 py-4 flex items-center justify-between border-b border-slate-900/30 backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/10">
