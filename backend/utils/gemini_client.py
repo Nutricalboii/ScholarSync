@@ -91,7 +91,6 @@ def get_structured_response(prompt: str, context: str = "") -> str:
             model='gemini-1.5-flash-latest',
             contents=full_prompt,
             config=types.GenerateContentConfig(
-                # system_instruction moved to prompt for v1 compatibility
                 response_mime_type='application/json'
             )
         )
@@ -99,9 +98,13 @@ def get_structured_response(prompt: str, context: str = "") -> str:
         return response.text
     except Exception as e:
         print(f"DEBUG: Structured API Call Error: {str(e)}")
-        # If JSON mode fails or isn't supported, fall back to standard response
-        print(f"Structured response failed, falling back: {str(e)}")
-        return get_gemini_response(prompt, context)
+        json_only_prompt = full_prompt + "\n\nReturn ONLY valid JSON. No markdown. No commentary."
+        response = client.models.generate_content(
+            model='gemini-1.5-flash-latest',
+            contents=json_only_prompt,
+            config=types.GenerateContentConfig()
+        )
+        return response.text
 
 @retry_with_backoff(retries=3, initial_delay=2)
 def upload_to_gemini(file_bytes: bytes, filename: str):

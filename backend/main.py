@@ -30,7 +30,7 @@ async def health():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False,
+    allow_credentials=False,  # must be False when allow_origins is "*"
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -96,6 +96,7 @@ class StudyResponse(BaseModel):
     flashcards: List[StudyCard]
 
 # ================= ROUTES =================
+# Root ('/') routes are defined above to avoid duplicates.
 
 @app.post("/upload")
 async def upload_materials(
@@ -229,15 +230,28 @@ async def analyze(x_session_id: Optional[str] = Header(None)):
 
     try:
         data = json.loads(clean_json_string(raw))
+        # minimal validation to ensure response is usable
+        if not isinstance(data, dict) or "analysis" not in data:
+            raise ValueError("Missing 'analysis'")
         return AnalysisResponse(**data)
     except Exception as e:
         print(f"Analysis Parse Error: {str(e)}")
-        # Fallback to a structured error response instead of crashing
-        return AnalysisResponse(
-            analysis="Failed to generate structured analysis. Here is the raw response: " + raw[:500],
-            learning_path=["Review uploaded documents"],
-            connections=["Main content"]
+        raw2 = get_structured_response(
+            "Analyze the provided context. Return ONLY valid JSON with fields: 'analysis', 'learning_path', 'connections'.",
+            full_context,
         )
+        try:
+            data2 = json.loads(clean_json_string(raw2))
+            if not isinstance(data2, dict) or "analysis" not in data2:
+                raise ValueError("Missing 'analysis'")
+            return AnalysisResponse(**data2)
+        except Exception:
+            # Fallback to a structured error response instead of crashing
+            return AnalysisResponse(
+                analysis="Failed to generate structured analysis. Here is the raw response: " + raw[:500],
+                learning_path=["Review uploaded documents"],
+                connections=["Main content"],
+            )
 
 @app.post("/quiz", response_model=QuizResponse)
 async def generate_quiz(x_session_id: Optional[str] = Header(None)):

@@ -351,7 +351,7 @@ export default function Home() {
 
       const res = await fetch(`${backendUrl}/quiz`, {
         method: "POST",
-        headers: { "X-Session-ID": sessionId },
+        headers: { "X-Session-ID": sessionId, "Accept": "application/json" },
         signal: controller.signal
       });
       
@@ -361,10 +361,17 @@ export default function Home() {
         setQuizQuestions(data.questions || []);
         setQuizStarted(true);
       } else {
-        setError("Failed to generate quiz. Try again.");
+        const errorData = await res.json().catch(() => ({ detail: "Failed to generate quiz." }));
+        setError(errorData.detail || "Failed to generate quiz.");
+        checkBackend();
       }
-    } catch {
-      setError("Connection error during quiz generation.");
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        setError("Quiz timed out. Click Retry and try again.");
+      } else {
+        setError("Connection error during quiz generation.");
+      }
+      checkBackend();
     } finally {
       setQuizLoading(false);
     }
@@ -396,7 +403,7 @@ export default function Home() {
 
       const res = await fetch(`${backendUrl}/study`, {
         method: "POST",
-        headers: { "X-Session-ID": sessionId },
+        headers: { "X-Session-ID": sessionId, "Accept": "application/json" },
         signal: controller.signal
       });
 
@@ -405,10 +412,17 @@ export default function Home() {
         const data = await res.json();
         setFlashcards(data.flashcards || []);
       } else {
-        setError("Failed to generate flashcards.");
+        const errorData = await res.json().catch(() => ({ detail: "Failed to generate flashcards." }));
+        setError(errorData.detail || "Failed to generate flashcards.");
+        checkBackend();
       }
-    } catch {
-      setError("Connection error during study generation.");
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        setError("Study timed out. Click Retry and try again.");
+      } else {
+        setError("Connection error during study generation.");
+      }
+      checkBackend();
     } finally {
       setStudyLoading(false);
     }
