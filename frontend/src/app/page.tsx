@@ -457,7 +457,10 @@ export default function Home() {
         <aside className="col-span-3 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2">
           <div className={`flex-1 flex flex-col gap-6 p-6 rounded-[2.5rem] backdrop-blur-xl ${isDark ? "bg-slate-900/40 border border-slate-800" : "bg-white shadow-xl shadow-slate-200/50"}`}>
             <section>
-              <h2 className="text-[10px] font-black uppercase tracking-[0.3em] mb-6 opacity-30">Vault</h2>
+              <div className="flex items-baseline justify-between mb-6">
+                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Vault</h2>
+                <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-500">{materials.length > 0 ? `${materials.length} files` : "Empty"}</span>
+              </div>
               <form onSubmit={handleUpload} className="relative isolate space-y-4">
                 <div className="relative border-2 border-dashed border-slate-800 rounded-3xl p-8 text-center hover:border-blue-500 transition-colors cursor-pointer group">
                   <input 
@@ -481,18 +484,25 @@ export default function Home() {
             </section>
 
             <section className="flex-1 flex flex-col min-h-0">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Library</h2>
-                <button onClick={clearMaterials} className="text-rose-500 hover:scale-110 transition-transform">🗑️</button>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Library</h2>
+                  <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-slate-500">Curated materials</span>
+                </div>
+                <button onClick={clearMaterials} className="text-[10px] font-black uppercase tracking-[0.25em] text-rose-500/70 hover:text-rose-400 hover:scale-105 transition-all">🗑️ Clear</button>
               </div>
               <div className="space-y-2 overflow-y-auto custom-scrollbar pr-2">
                 {materials.map((m, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-slate-950/50 rounded-2xl border border-slate-900 group">
-                    <span className="text-[10px] font-bold truncate pr-2">{m.filename}</span>
-                    <button onClick={() => deleteMaterial(m.filename)} className="opacity-0 group-hover:opacity-100 transition-opacity text-rose-500">×</button>
+                  <div key={i} className="flex items-center justify-between p-3 bg-slate-950/60 rounded-2xl border border-slate-900/70 hover:border-blue-500/50 transition-colors group">
+                    <span className="text-[10px] font-bold truncate pr-2 group-hover:text-blue-200">{m.filename}</span>
+                    <button onClick={() => deleteMaterial(m.filename)} className="opacity-0 group-hover:opacity-100 transition-opacity text-rose-500 hover:scale-110">×</button>
                   </div>
                 ))}
-                {materials.length === 0 && <div className="text-[10px] opacity-20 text-center py-4 uppercase tracking-widest">Empty</div>}
+                {materials.length === 0 && (
+                  <div className="text-[10px] opacity-25 text-center py-6 uppercase tracking-widest border border-dashed border-slate-800/60 rounded-2xl">
+                    Library Empty
+                  </div>
+                )}
               </div>
             </section>
           </div>
@@ -728,21 +738,23 @@ export default function Home() {
 
                       <div className="perspective-1000 w-full h-[400px]">
                         <div 
-                          className={`flashcard-inner relative w-full h-full cursor-pointer ${isFlipped ? 'flashcard-flipped' : ''}`}
+                          className={`flashcard-outer w-full h-full cursor-pointer transition-transform duration-300 hover:-translate-y-1 hover:scale-[1.01] ${isFlipped ? 'flashcard-flipped' : ''}`}
                           onClick={() => setIsFlipped(!isFlipped)}
                         >
-                          {/* Front */}
-                          <div className={`flashcard-front absolute inset-0 bg-slate-900/40 border border-slate-800 rounded-[3rem] p-12 flex flex-col items-center justify-center text-center backdrop-blur-sm backface-hidden`}>
-                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-8">Question</span>
-                            <h3 className="text-2xl font-bold text-slate-200 leading-relaxed">{flashcards[currentCardIdx].front}</h3>
-                            <div className="mt-12 text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] animate-pulse">Click to Reveal</div>
-                          </div>
+                          <div className="flashcard-inner relative w-full h-full">
+                            {/* Front */}
+                            <div className="flashcard-front bg-slate-900/40 border border-slate-800 rounded-[3rem] p-12 text-center backdrop-blur-sm">
+                              <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-8 block">Question</span>
+                              <h3 className="text-2xl font-bold text-slate-200 leading-relaxed">{flashcards[currentCardIdx].front}</h3>
+                              <div className="mt-12 text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] animate-pulse">Click to Reveal</div>
+                            </div>
 
-                          {/* Back */}
-                          <div className={`flashcard-back absolute inset-0 bg-blue-600 border border-blue-500 rounded-[3rem] p-12 flex flex-col items-center justify-center text-center backface-hidden`}>
-                            <span className="text-[10px] font-black text-blue-100 uppercase tracking-[0.4em] mb-8">Answer</span>
-                            <p className="text-xl font-bold text-white leading-relaxed">{flashcards[currentCardIdx].back}</p>
-                            <div className="mt-12 text-[9px] font-bold text-blue-200 uppercase tracking-[0.2em]">Click to flip back</div>
+                            {/* Back */}
+                            <div className="flashcard-back bg-blue-600 border border-blue-500 rounded-[3rem] p-12 text-center">
+                              <span className="text-[10px] font-black text-blue-100 uppercase tracking-[0.4em] mb-8 block">Answer</span>
+                              <p className="text-xl font-bold text-white leading-relaxed">{flashcards[currentCardIdx].back}</p>
+                              <div className="mt-12 text-[9px] font-bold text-blue-200 uppercase tracking-[0.2em]">Click to flip back</div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -780,16 +792,16 @@ export default function Home() {
 
       <footer className="px-8 py-8 flex flex-col items-center gap-6">
         {/* MacOS Action Dock */}
-        <div className="bg-slate-900/80 backdrop-blur-2xl border border-slate-800 p-1.5 rounded-[2.5rem] flex items-center gap-1.5 shadow-2xl">
+        <div className="mesh-gradient bg-slate-900/90 backdrop-blur-2xl border border-slate-800/80 p-1.5 rounded-[2.5rem] flex items-center gap-1.5 shadow-2xl shadow-blue-900/40">
           <button 
             onClick={() => setActiveTab('research')} 
-            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'research' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
+            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 hover:-translate-y-0.5 hover:scale-[1.03] ${activeTab === 'research' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-transparent hover:bg-slate-800 text-slate-400'}`}
           >
             <span>🔍</span> Research
           </button>
           <button 
             onClick={() => setActiveTab('analysis')} 
-            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'analysis' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
+            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 hover:-translate-y-0.5 hover:scale-[1.03] ${activeTab === 'analysis' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-transparent hover:bg-slate-800 text-slate-400'}`}
           >
             <span>🕸️</span> Graph
           </button>
@@ -798,13 +810,13 @@ export default function Home() {
           
           <button 
             onClick={() => setActiveTab('quiz')} 
-            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'quiz' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
+            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 hover:-translate-y-0.5 hover:scale-[1.03] ${activeTab === 'quiz' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-transparent hover:bg-slate-800 text-slate-400'}`}
           >
             <span>📝</span> Quiz
           </button>
           <button 
             onClick={() => setActiveTab('study')} 
-            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'study' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
+            className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 hover:-translate-y-0.5 hover:scale-[1.03] ${activeTab === 'study' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'bg-transparent hover:bg-slate-800 text-slate-400'}`}
           >
             <span>🃏</span> Study
           </button>
@@ -814,7 +826,7 @@ export default function Home() {
           <button 
             onClick={handleAnalyze} 
             disabled={loading || materials.length === 0}
-            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all flex items-center gap-3 shadow-lg shadow-indigo-600/20"
+            className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all flex items-center gap-3 shadow-lg shadow-indigo-600/20 hover:-translate-y-0.5 hover:scale-[1.03]"
           >
             <span>✨</span> {loading ? 'Analyzing...' : 'Deep Analysis'}
           </button>
