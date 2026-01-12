@@ -15,10 +15,22 @@ from utils.vector_store import vector_store
 
 app = FastAPI(title="ScholarSync API")
 
+@app.get("/")
+async def root():
+    return {"status": "online", "message": "ScholarSync Engine is Live"}
+
+@app.api_route("/", methods=["HEAD"])
+async def root_head():
+    return Response(status_code=200)
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all origins for hackathon submission safety
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -84,14 +96,6 @@ class StudyResponse(BaseModel):
     flashcards: List[StudyCard]
 
 # ================= ROUTES =================
-
-@app.get("/")
-async def root():
-    return {"status": "online", "message": "ScholarSync Engine is Live"}
-
-@app.api_route("/", methods=["HEAD"])
-async def root_head():
-    return Response(status_code=200)
 
 @app.post("/upload")
 async def upload_materials(

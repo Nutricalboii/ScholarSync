@@ -8,8 +8,12 @@ import "katex/dist/katex.min.css";
 
 type Material = { filename: string };
 
-// Use Render backend URL directly (no trailing slash)
-const backendUrl = "https://scholarsync-jh4j.onrender.com";
+// Use a smart URL strategy: Use /api proxy for production (Vercel) to avoid CORS/Timeouts,
+// but allow direct URL for local development or if proxy fails.
+const PROD_URL = "https://scholarsync-jh4j.onrender.com";
+const backendUrl = typeof window !== "undefined" && window.location.hostname !== "localhost" 
+  ? "/api" 
+  : PROD_URL;
 
 export default function Home() {
   /* ================= SESSION ================= */
@@ -66,7 +70,7 @@ export default function Home() {
       // PATIENCE: 120s timeout for "Engine Wakeup" (Cold Start)
       const timeoutId = setTimeout(() => controller.abort(), 120000); 
 
-      const res = await fetch(`${backendUrl}/`, {
+      const res = await fetch(`${backendUrl}/health`, {
         signal: controller.signal,
       });
 
@@ -83,10 +87,10 @@ export default function Home() {
       if (err.name === 'AbortError') {
         setError("Engine wake-up timed out. Click 'Retry' to try again.");
       } else {
-        setError("System Offline: Connecting to engine...");
+        setError(`System Offline: Unable to reach ${PROD_URL}`);
       }
     }
-  }, []);
+  }, [backendUrl]);
 
   useEffect(() => {
     checkBackend();
@@ -107,7 +111,7 @@ export default function Home() {
     } catch {
       console.error("Failed to fetch materials");
     }
-  }, [sessionId]);
+  }, [backendUrl, sessionId]);
 
   const fetchConcepts = useCallback(async (force = false) => {
     if (!force && concepts.length > 0) return;
@@ -124,7 +128,7 @@ export default function Home() {
     } catch {
       console.error("Failed to fetch concepts");
     }
-  }, [sessionId, concepts.length]);
+  }, [backendUrl, sessionId, concepts.length]);
 
   const deleteMaterial = async (filename: string) => {
     try {
@@ -267,7 +271,7 @@ export default function Home() {
         ...h,
         { role: "assistant", content: isTimeout 
           ? "⏳ **Query Timeout:** The engine is taking too long to answer. It might be waking up or processing a large amount of data."
-          : `❌ **System Error:** Failed to connect to engine at \`${backendUrl}\`.` 
+          : `❌ **System Error:** Failed to reach engine. Please ensure the backend is live at ${PROD_URL}` 
         },
       ]);
       checkBackend(); 
@@ -714,14 +718,14 @@ export default function Home() {
                           onClick={() => setIsFlipped(!isFlipped)}
                         >
                           {/* Front */}
-                          <div className={`flashcard-front absolute inset-0 bg-slate-900/40 border border-slate-800 rounded-[3rem] p-12 flex flex-col items-center justify-center text-center backdrop-blur-sm`}>
+                          <div className={`flashcard-front absolute inset-0 bg-slate-900/40 border border-slate-800 rounded-[3rem] p-12 flex flex-col items-center justify-center text-center backdrop-blur-sm backface-hidden`}>
                             <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-8">Question</span>
                             <h3 className="text-2xl font-bold text-slate-200 leading-relaxed">{flashcards[currentCardIdx].front}</h3>
                             <div className="mt-12 text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] animate-pulse">Click to Reveal</div>
                           </div>
 
                           {/* Back */}
-                          <div className={`flashcard-back absolute inset-0 bg-blue-600 border border-blue-500 rounded-[3rem] p-12 flex flex-col items-center justify-center text-center`}>
+                          <div className={`flashcard-back absolute inset-0 bg-blue-600 border border-blue-500 rounded-[3rem] p-12 flex flex-col items-center justify-center text-center backface-hidden`}>
                             <span className="text-[10px] font-black text-blue-100 uppercase tracking-[0.4em] mb-8">Answer</span>
                             <p className="text-xl font-bold text-white leading-relaxed">{flashcards[currentCardIdx].back}</p>
                             <div className="mt-12 text-[9px] font-bold text-blue-200 uppercase tracking-[0.2em]">Click to flip back</div>
@@ -762,7 +766,7 @@ export default function Home() {
 
       <footer className="px-8 py-8 flex flex-col items-center gap-6">
         {/* MacOS Action Dock */}
-        <div className="bg-slate-900/80 backdrop-blur-2xl border border-slate-800 p-2 rounded-[2.5rem] flex items-center gap-2 shadow-2xl">
+        <div className="bg-slate-900/80 backdrop-blur-2xl border border-slate-800 p-1.5 rounded-[2.5rem] flex items-center gap-1.5 shadow-2xl">
           <button 
             onClick={() => setActiveTab('research')} 
             className={`px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${activeTab === 'research' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'hover:bg-slate-800 text-slate-400'}`}
