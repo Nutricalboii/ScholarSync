@@ -15,6 +15,9 @@ const backendUrl = typeof window !== "undefined" && window.location.hostname !==
   ? "/api" 
   : PROD_URL;
 
+// Direct health check bypasses Vercel's 10s proxy timeout during cold starts
+const HEALTH_CHECK_URL = PROD_URL + "/health";
+
 export default function Home() {
   /* ================= SESSION ================= */
   const [sessionId] = useState(() => {
@@ -70,7 +73,8 @@ export default function Home() {
       // PATIENCE: 120s timeout for "Engine Wakeup" (Cold Start)
       const timeoutId = setTimeout(() => controller.abort(), 120000); 
 
-      const res = await fetch(`${backendUrl}/health`, {
+      // Use the direct URL for health checks to avoid Vercel proxy timeouts (10s limit)
+      const res = await fetch(HEALTH_CHECK_URL, {
         signal: controller.signal,
       });
 
@@ -80,17 +84,17 @@ export default function Home() {
         setError("");
       } else {
         setBackendStatus("offline");
-        setError("Engine is warming up. Please wait 30-60 seconds...");
+        setError("Engine is warming up. This can take 60s on Render Free Tier.");
       }
     } catch (err: any) {
       setBackendStatus("offline");
       if (err.name === 'AbortError') {
-        setError("Engine wake-up timed out. Click 'Retry' to try again.");
+        setError("Engine wake-up timed out. The server is still starting...");
       } else {
-        setError(`System Offline: Unable to reach ${PROD_URL}`);
+        setError(`System Offline: Attempting to reach engine...`);
       }
     }
-  }, [backendUrl]);
+  }, []);
 
   useEffect(() => {
     checkBackend();
@@ -107,7 +111,15 @@ export default function Home() {
       const res = await fetch(`${backendUrl}/materials`, {
         headers: { "X-Session-ID": sessionId },
       });
-      if (res.ok) setMaterials(await res.json());
+      if (res.ok) {
+        setMaterials(await res.json());
+      } else if (res.status === 504 && backendUrl === "/api") {
+        // Fallback to direct URL if proxy fails (504 Gateway Timeout)
+        const directRes = await fetch(`${PROD_URL}/materials`, {
+          headers: { "X-Session-ID": sessionId },
+        });
+        if (directRes.ok) setMaterials(await directRes.json());
+      }
     } catch {
       console.error("Failed to fetch materials");
     }
@@ -124,6 +136,17 @@ export default function Home() {
         const data = await res.json();
         setConcepts(data.concepts || []);
         setConceptLinks(data.links || []);
+      } else if (res.status === 504 && backendUrl === "/api") {
+        // Robustness: Fallback to direct URL if proxy times out
+        const directRes = await fetch(`${PROD_URL}/concepts`, {
+          method: "POST",
+          headers: { "X-Session-ID": sessionId },
+        });
+        if (directRes.ok) {
+          const data = await directRes.json();
+          setConcepts(data.concepts || []);
+          setConceptLinks(data.links || []);
+        }
       }
     } catch {
       console.error("Failed to fetch concepts");
@@ -258,10 +281,20 @@ export default function Home() {
           { role: "assistant", content: data.answer },
         ]);
       } else {
-        const errorData = await res.json().catch(() => ({ detail: "Engine is processing... please wait." }));
+        const errorText = await res.text();
+        let errorMessage = "The server encountered an error.";
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.detail || errorMessage;
+        } catch (e) {
+          if (errorText.includes("Gateway Timeout") || res.status === 504) {
+            errorMessage = "Engine is cold-starting. Please wait 30 seconds and try again.";
+          }
+        }
+        
         setChatHistory(h => [
           ...h,
-          { role: "assistant", content: `⚠️ **Error:** ${errorData.detail || "The server encountered an error."}` },
+          { role: "assistant", content: `⚠️ **Status ${res.status}:** ${errorMessage}` },
         ]);
         checkBackend();
       }
@@ -320,12 +353,19 @@ export default function Home() {
           },
         ]);
         fetchConcepts(true);
-      } else if (res.status === 504 || res.status === 429) {
-        // Handle "Busy" or "Gateway Timeout" gracefully
-        setError("Analysis engine is warming up. Please wait 10 seconds and try again.");
       } else {
-        const errorData = await res.json().catch(() => ({ detail: "Analysis engine is busy or timed out." }));
-        setError(errorData.detail || "Analysis failed.");
+        const errorText = await res.text();
+        let msg = "Analysis failed.";
+        if (res.status === 504 || errorText.includes("Gateway Timeout")) {
+          msg = "Engine is cold-starting. Please wait 60 seconds for Deep Analysis to finish.";
+        } else {
+          try {
+            const data = JSON.parse(errorText);
+            msg = data.detail || msg;
+          } catch(e) {}
+        }
+        setError(msg);
+        checkBackend();
       }
     } catch (err: any) {
       console.error("Analysis Error:", err);
@@ -362,8 +402,18 @@ export default function Home() {
         setQuizQuestions(data.questions || []);
         setQuizStarted(true);
       } else {
-        const errorData = await res.json().catch(() => ({ detail: "Failed to generate quiz." }));
-        setError(errorData.detail || "Failed to generate quiz.");
+        const errorText = await res.text();
+        let msg = "Failed to generate quiz.";
+        if (res.status === 504 || errorText.includes("Gateway Timeout")) {
+          msg = "Engine is cold-starting. Retrying quiz generation...";
+          setTimeout(handleStartQuiz, 5000);
+        } else {
+          try {
+            const data = JSON.parse(errorText);
+            msg = data.detail || msg;
+          } catch(e) {}
+        }
+        setError(msg);
         checkBackend();
       }
     } catch (err: any) {
@@ -413,8 +463,18 @@ export default function Home() {
         const data = await res.json();
         setFlashcards(data.flashcards || []);
       } else {
-        const errorData = await res.json().catch(() => ({ detail: "Failed to generate flashcards." }));
-        setError(errorData.detail || "Failed to generate flashcards.");
+        const errorText = await res.text();
+        let msg = "Failed to generate flashcards.";
+        if (res.status === 504 || errorText.includes("Gateway Timeout")) {
+          msg = "Engine is cold-starting. Retrying flashcard generation...";
+          setTimeout(handleStartStudy, 5000);
+        } else {
+          try {
+            const data = JSON.parse(errorText);
+            msg = data.detail || msg;
+          } catch(e) {}
+        }
+        setError(msg);
         checkBackend();
       }
     } catch (err: any) {
@@ -556,7 +616,8 @@ export default function Home() {
                 </form>
               </div>
             ) : activeTab === 'analysis' ? (
-              <div className="h-full flex flex-col p-8 bg-[#020617] relative overflow-hidden">
+              <div className={`h-full flex flex-col p-8 relative overflow-hidden ${isDark ? "bg-[#020617]" : "bg-white"}`}>
+
                 {/* Background Tech Grid Effect */}
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
                      style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
@@ -614,7 +675,8 @@ export default function Home() {
                 </div>
               </div>
             ) : activeTab === 'quiz' ? (
-              <div className="h-full flex flex-col p-8 bg-[#020617] relative overflow-hidden">
+              <div className={`h-full flex flex-col p-8 relative overflow-hidden ${isDark ? "bg-[#020617]" : "bg-white"}`}>
+
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
                      style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
                 
@@ -701,7 +763,8 @@ export default function Home() {
                 </div>
               </div>
             ) : activeTab === 'study' ? (
-              <div className="h-full flex flex-col p-8 bg-[#020617] relative overflow-hidden">
+              <div className={`h-full flex flex-col p-8 relative overflow-hidden ${isDark ? "bg-[#020617]" : "bg-white"}`}>
+
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
                      style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
                 
