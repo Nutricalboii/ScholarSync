@@ -263,6 +263,7 @@ export default function Home() {
           ...h,
           { role: "assistant", content: `⚠️ **Error:** ${errorData.detail || "The server encountered an error."}` },
         ]);
+        checkBackend();
       }
     } catch (e: any) {
       console.error("Query Error:", e);
@@ -431,7 +432,10 @@ export default function Home() {
   /* ================= UI ================= */
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden font-sans transition-colors duration-500 ${isDark ? "bg-[#020617] text-slate-200" : "bg-slate-50 text-slate-900"}`}>
+    <div className={`h-screen flex flex-col overflow-hidden font-sans transition-colors duration-500 relative ${isDark ? "bg-[#020617] text-slate-200" : "bg-slate-50 text-slate-900"}`}>
+      {/* Mesh Gradient Background Layer */}
+      <div className="fixed inset-0 mesh-gradient opacity-20 pointer-events-none z-0" />
+      
       <header className="px-8 py-4 flex items-center justify-between border-b border-slate-900/30 backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/10">
@@ -863,6 +867,15 @@ export default function Home() {
           transform: rotateY(180deg);
         }
       `}</style>
+
+      {/* SVG Mask for Squircle Shapes */}
+      <svg width="0" height="0" className="absolute">
+        <defs>
+          <clipPath id="squircle-clip" clipPathUnits="objectBoundingBox">
+            <path d="M .5,0 C .1,0 0,.1 0,.5 0,.9 .1,1 .5,1 .9,1 1,.9 1,.5 1,.1 .9,0 .5,0 Z" />
+          </clipPath>
+        </defs>
+      </svg>
     </div>
   );
 }
