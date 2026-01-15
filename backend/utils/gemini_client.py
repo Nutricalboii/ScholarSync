@@ -50,21 +50,17 @@ def get_gemini_response(prompt: str, context: str = "", **kwargs) -> str:
     
     system_instruction = "You are a professional research assistant. ALWAYS use LaTeX for mathematical formulas ($ for inline, $ for block). If the user asks for numericals, represent them in their original mathematical structure using LaTeX."
     
-    # Construct contents: handle both text and file references
-    contents = [f"{system_instruction}\n\n"]
+    # Construct single prompt string to avoid turn-based validation errors in new SDK
+    full_prompt = f"{system_instruction}\n\n"
     if context:
-        contents.append(f"Context:\n{context}\n\n")
+        full_prompt += f"Context:\n{context}\n\n"
     
-    file_ids = kwargs.get('file_ids', [])
-    for fid in file_ids:
-        contents.append(types.Content(parts=[types.Part(file_data=types.FileData(file_uri=fid, mime_type="application/pdf"))]))
-            
-    contents.append(f"Question: {prompt}")
+    full_prompt += f"Question: {prompt}"
     
     try:
         response = client.models.generate_content(
             model='gemini-1.5-flash-latest',
-            contents=contents,
+            contents=full_prompt,
             config=types.GenerateContentConfig()
         )
         print(f"DEBUG: Successfully received response (length: {len(response.text)})")

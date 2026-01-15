@@ -11,11 +11,13 @@ type Material = { filename: string };
 // Use a smart URL strategy: Use /api proxy for production (Vercel) to avoid CORS/Timeouts,
 // but allow direct URL for local development or if proxy fails.
 const PROD_URL = "https://scholarsync-jh4j.onrender.com";
-const backendUrl = typeof window !== "undefined" && window.location.hostname !== "localhost" 
-  ? "/api" 
+// Direct URL is required because Vercel's proxy (/api) times out after 10s,
+// while Render cold starts and AI responses can take 30-60s.
+const backendUrl = typeof window !== "undefined" && window.location.hostname === "localhost"
+  ? "http://localhost:10000"
   : PROD_URL;
 
-// Direct health check bypasses Vercel's 10s proxy timeout during cold starts
+// Direct health check for monitoring
 const HEALTH_CHECK_URL = PROD_URL + "/health";
 
 export default function Home() {
